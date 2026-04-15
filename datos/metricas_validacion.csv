@@ -1,0 +1,5 @@
+metrica,valor_matematico_real,interpretacion_operativa
+MSE,0.000700,Error cuadrático absoluto oficial penalizando picos
+RMSE,0.026452,Raíz de desviación (mismo orden magnitud de Hm3 escalado)
+MAE,0.019681,Fallos lineares directos de prediccion algorítmica
+R2_Score,0.985651,Rendimiento global captura varianza (1.0 = Perfección absoluta)

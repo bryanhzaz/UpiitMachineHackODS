@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+/* =========================================================
+   HACKODS 2026 - MODERN MINIMAL DARK THEME
+   Mejora total UI/UX sin inyectar HTML explícito
+========================================================= */
+
+:root {
+  --bs-body-font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  --bs-body-bg: #0b0d12; /* Fondo ultra oscuro y limpio */
+  --dashboard-card-bg: rgba(22, 25, 33, 0.65); /* Diseño glassmorphism traslúcido */
+  --bs-heading-color: #f8fafc;
+  --bs-body-color: #cbd5e1;
+}
+
+body {
+  background-color: var(--bs-body-bg);
+  font-family: var(--bs-body-font-family);
+  color: var(--bs-body-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* -------------------------------------
+   LAYOUT & CARDS (Efecto Glass)
+-------------------------------------- */
+.card, .quarto-dashboard-card, .bslib-card {
+  background-color: var(--dashboard-card-bg) !important;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin-bottom: 1.25rem;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+}
+
+.card-header, .quarto-dashboard-card-header {
+  background-color: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.25rem 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* -------------------------------------
+   VALUE BOXES (Rediseño Estético KPI)
+-------------------------------------- */
+.value-box {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.value-box::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+.value-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.value-box .icon i {
+  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 3rem; /* Suavizamos los íconos de bootstrap */
+  transition: transform 0.3s ease;
+}
+
+.value-box:hover .icon i {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.value-box .inner h3 {
+  font-size: 1.9rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+}
+.value-box .inner p {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+
+/* Overwrites de degradados para fondos minimal y sofisticados (No sólidos) */
+.bg-primary { background: linear-gradient(135deg, #1d4ed8, #2563eb) !important; }
+.bg-danger { background: linear-gradient(135deg, #b91c1c, #dc2626) !important; }
+/* Color especial Warning para máxima lectura */
+.bg-warning { background: linear-gradient(135deg, #b45309, #d97706) !important; color: #ffffff !important;}
+.bg-warning .inner p, .bg-warning .inner h3, .bg-warning .icon i { color: #ffffff !important; }
+.bg-info { background: linear-gradient(135deg, #0369a1, #0284c7) !important; }
+.bg-success { background: linear-gradient(135deg, #15803d, #16a34a) !important; }
+.bg-secondary { background: linear-gradient(135deg, #475569, #64748b) !important; }
+
+/* -------------------------------------
+   NAVBAR Y CABECERA DEL DASHBOARD
+-------------------------------------- */
+.navbar {
+  background-color: rgba(11, 13, 18, 0.85) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #f8fafc !important;
+}
+
+.nav-link {
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  color: #94a3b8 !important;
+  opacity: 0.8;
+}
+
+.nav-link:hover {
+  color: #e2e8f0 !important;
+  opacity: 1;
+}
+
+.nav-link.active {
+  color: #38bdf8 !important; /* Azul eléctrico neón */
+  font-weight: 600;
+  opacity: 1;
+  border-bottom: 2px solid #38bdf8;
+}
+
+/* Pequeños retoques al sidebar de existir */
+.bslib-sidebar-layout > .sidebar {
+  background-color: var(--dashboard-card-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+}

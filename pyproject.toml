@@ -1,0 +1,23 @@
+[project]
+name = "upiitmachinehackods"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "joblib>=1.5.3",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.8",
+    "notebook>=7.5.5",
+    "numpy>=2.4.4",
+    "pandas>=3.0.2",
+    "plotly>=6.7.0",
+    "pyarrow>=23.0.1",
+    "requests>=2.33.1",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "torch>=2.11.0",
+    "tqdm>=4.67.3",
+    "urllib3>=2.6.3",
+    "wordcloud>=1.9.6",
+]

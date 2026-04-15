@@ -1,0 +1,831 @@
+---
+title: "¿Cuáles son las presas mexicanas más vulnerables y cómo podemos anticipar su agotamiento?"
+author: "UPIIT Machine"
+format: 
+  dashboard:
+    theme: darkly
+    css: estilos.css
+    orientation: rows
+    nav-buttons:
+      - icon: github
+        href: https://github.com/
+    pages:
+      - title:  KPIs
+      - title:  Tendencia Histórica
+      - title:  Animación Nacional
+      - title:  Zonas Críticas (Hover)
+      - title:  Escenarios Térmicos IA
+      - title:  Proyección y Riesgo IA
+      - title:  Decisiones
+execute:
+  echo: false
+  warning: false
+---
+```{python}
+#| context: setup
+#| cache: false
+#Se hace la importación de librerías necesarias para poder realizar visualizaciones importantes
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import numpy as np
+import warnings
+import random
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+
+#Fijamos una semilla para que los resultados sean reproducibles
+random.seed(42)
+
+#Se define una variable para manejar errores
+error_mode = False
+#Implementación de try-except para manejar errores
+try:
+    #Se cargan los datos previamente manejados en el notebook de preprocesamiento
+    df_limpio = pd.read_parquet('../datos/dataset_limpio_modelo.parquet')
+    df_limpio['fecha'] = pd.to_datetime(df_limpio['fecha'])
+    df_limpio['nivel_hidrico_pct'] = df_limpio['nivel_hidrico_pct'] * 100
+    #Se agrupan los datos por fecha y se calcula el promedio de los niveles hídricos
+    df_actual = df_limpio.groupby('fecha').mean(numeric_only=True).reset_index()
+    #Se obtiene el último nivel hídrico
+    ultimo_nivel = df_actual['nivel_hidrico_pct'].iloc[-1]
+
+    #Se cargan las predicciones oficiales, referentes al modelo Transformer construido por UPIIT Machine
+    df_proyecciones = pd.read_csv('../datos/predicciones_finales_smn.csv')
+    for col in ['pred_pct_Base', 'pred_pct_Temp_+1C', 'pred_pct_Temp_+2C', 'pred_pct_Temp_+3C']:
+        if col in df_proyecciones.columns:
+            df_proyecciones[col] = df_proyecciones[col] * 100
+    #Se obtiene la predicción promedio de los niveles hídricos
+    prediccion_IA = df_proyecciones['pred_pct_Base'].mean()
+
+    #Se crea una columna con el año y mes para facilitar el agrupamiento
+    df_limpio['año_mes'] = df_limpio['fecha'].dt.to_period('M').astype(str)
+    #Se agrupan los datos por año y mes, además de la presa, latitud y longitud, y se calcula el promedio de los niveles hídricos
+    agrupado_geo = df_limpio.groupby(
+        ['año_mes', 'nombre_presa', 'latitud', 'longitud']
+    ).mean(numeric_only=True).reset_index()
+    #Aquí obtiene el último nivel hídrico
+    # Selecciona la última fecha reportada INDIVIDUALMENTE por cada presa
+    ultimos = df_limpio[df_limpio.fecha == df_limpio.fecha.max()].copy()
+
+    #Se calcula el nivel actual
+    nivel_actual = ultimos['nivel_hidrico_pct'].mean()
+    #Se calcula el porcentaje de presas en niveles críticos y óptimos
+    if len(ultimos) > 0:
+        #Se calcula el porcentaje de presas en niveles críticos (10% o menos)
+        pct_critico = (len(ultimos[ultimos['nivel_hidrico_pct'] < 10]) / len(ultimos)) * 100
+        #Se calcula el porcentaje de presas en niveles óptimos (50% o más)  
+        pct_optimo  = (len(ultimos[ultimos['nivel_hidrico_pct'] > 50]) / len(ultimos)) * 100
+    else:
+        pct_critico, pct_optimo = 0, 0
+    #Obtención de fechas para el cálculo de la variación entre años
+    ultimo_año_fecha = df_limpio['fecha'].max()
+    hace_un_año = ultimo_año_fecha - pd.DateOffset(years=1)
+    hace_dos_años = ultimo_año_fecha - pd.DateOffset(years=2)
+    #Cálculo del promedio de los niveles hídricos en el último año y en el año anterior
+    promedio_ultimo_año = df_limpio[(df_limpio['fecha'] > hace_un_año) & (df_limpio['fecha'] <= ultimo_año_fecha)]['nivel_hidrico_pct'].mean()
+    promedio_año_anterior = df_limpio[(df_limpio['fecha'] > hace_dos_años) & (df_limpio['fecha'] <= hace_un_año)]['nivel_hidrico_pct'].mean()
+    #Cálculo de la variación entre años 
+    variacion_interanual = promedio_ultimo_año - promedio_año_anterior
+    #Cálculo del promedio global de los niveles hídricos
+    promedio_global = df_limpio['nivel_hidrico_pct'].mean()
+    #Cálculo de la desviación global de los niveles hídricos respecto al promedio global
+    desviacion_global = nivel_actual - promedio_global
+    #Cálculo del promedio de las predicciones del modelo Transformer    
+    pred_promedio_ia = df_proyecciones['pred_pct_Base'].mean()
+    #Cálculo del impacto climático en los niveles hídricos
+    impacto_climatico_ia = (df_proyecciones['pred_pct_Temp_+2C'] - df_proyecciones['pred_pct_Base']).mean()
+    #Cálculo del porcentaje de presas en niveles críticos según las predicciones del modelo Transformer
+    if len(df_proyecciones) > 0:
+        pct_colapso_ia = (len(df_proyecciones[df_proyecciones['pred_pct_Temp_+2C'] < 45]) / len(df_proyecciones)) * 100
+    else:
+        pct_colapso_ia = 0
+    #Cálculo del año más crítico
+    df_limpio['año'] = df_limpio['fecha'].dt.year
+    año_mas_critico = int(df_limpio.groupby('año')['nivel_hidrico_pct'].mean().idxmin())
+    #Cálculo de la volatilidad del sistema, desviación estándar de los niveles hídricos
+    volatilidad_sistema = df_limpio['nivel_hidrico_pct'].std()
+    #Cálculo de la pendiente diaria de los niveles hídricos
+    fechas_ordinales = df_actual['fecha'].apply(lambda x: x.toordinal())
+    #Simplemente se ajusta una forma lineal a los datos 
+    pendiente_diaria, _ = np.polyfit(fechas_ordinales, df_actual['nivel_hidrico_pct'], 1)
+    pendiente_tendencia = pendiente_diaria * 365.25
+    #Cálculo del promedio de los niveles hídricos en los últimos 5 años
+    hace_5_años = ultimo_año_fecha - pd.DateOffset(years=5)
+    #Se calcula el promedio de los niveles hídricos en los últimos 5 años
+    prom_5y_atras = df_limpio[(df_limpio['fecha'] > hace_5_años - pd.DateOffset(years=1)) & (df_limpio['fecha'] <= hace_5_años)]['nivel_hidrico_pct'].mean()
+    #Si el promedio de los niveles hídricos en los últimos 5 años es NaN, se toma el promedio global
+    if pd.isna(prom_5y_atras): prom_5y_atras = promedio_global
+    #Cálculo del cambio en los niveles hídricos en los últimos 5 años
+    cambio_5_años = promedio_ultimo_año - prom_5y_atras
+
+    # Animación para las estadísticas nacionales
+    if 'estado_id' in df_limpio.columns:
+        #Se calcula el promedio de los niveles hídricos por estado
+        promedio_estado = df_limpio.groupby('estado_id')['nivel_hidrico_pct'].mean()
+        #Se obtiene el estado con el menor nivel hídrico
+        estado_menor_nivel = promedio_estado.idxmin().split('-')[-1]
+        #Obtenemos los niveles hídricos de los últimos 2 años para calcular la mayor caída
+        primeros_años = df_limpio['fecha'].min() + pd.DateOffset(years=2)
+        ultimos_años = ultimo_año_fecha - pd.DateOffset(years=2)
+        prom_ini_est = df_limpio[df_limpio['fecha'] <= primeros_años].groupby('estado_id')['nivel_hidrico_pct'].mean()
+        prom_fin_est = df_limpio[df_limpio['fecha'] >= ultimos_años].groupby('estado_id')['nivel_hidrico_pct'].mean()
+        estado_mayor_caida = (prom_ini_est - prom_fin_est).idxmax().split('-')[-1]
+    else:
+        estado_menor_nivel, estado_mayor_caida = "N/A", "N/A"
+    #Porcentaje de presas en niveles críticos
+    pct_critico_nacional = pct_critico
+    #Se calcula el promedio de los niveles hídricos por presa
+    promedio_hist_presa = df_limpio.groupby('nombre_presa')['nivel_hidrico_pct'].mean().reset_index()
+    #Se renombra la columna de los niveles hídricos
+    promedio_hist_presa.rename(columns={'nivel_hidrico_pct': 'promedio_hst'}, inplace=True)
+    #Se une el promedio histórico con el agrupado por año y mes
+    agrupado_geo = pd.merge(agrupado_geo, promedio_hist_presa, on='nombre_presa', how='left')
+    #Se calcula el deterioro histórico
+    agrupado_geo['deterioro_historico'] = agrupado_geo['promedio_hst'] - agrupado_geo['nivel_hidrico_pct']
+    #Se calcula el tamaño del deterioro
+    agrupado_geo['tamaño_deterioro'] = agrupado_geo['deterioro_historico'].clip(lower=1)
+#Agregamos un caso de error para cuando no se tenga acceso a los datos, para asegurar visualización
+except Exception as e:
+    error_mode = True
+    print(f"I/O Exception: {str(e)}")
+    df_actual = pd.DataFrame({
+        'fecha': pd.to_datetime(['2025-01-01', '2025-02-01']),
+        'nivel_hidrico_pct': [40, 30],
+        'temp_max_c': [30, 32]
+    })
+    df_proyecciones = pd.DataFrame({
+        'presa_id': [1, 2, 3],
+        'nombre_presa': ['NA', 'NA2', 'NA3'],
+        'latitud': [0, 0, 0],
+        'longitud': [0, 0, 0],
+        'pred_pct_Base': [50, 40, 30],
+        'pred_pct_Temp_+1C': [40, 30, 20],
+        'pred_pct_Temp_+2C': [30, 20, 10],
+        'pred_pct_Temp_+3C': [20, 10, 0]
+    })
+    nivel_actual         = 45.0
+    pct_critico          = 15.0
+    pct_optimo           = 10.0
+    variacion_interanual = -5.0
+    desviacion_global    = -10.0
+    pred_promedio_ia     = 40.0
+    impacto_climatico_ia = -8.0
+    pct_colapso_ia       = 25.0
+    año_mas_critico      = 2023
+    volatilidad_sistema  = 12.5
+    pendiente_tendencia  = -1.5
+    cambio_5_años        = -10.0
+    estado_menor_nivel   = "SON"
+    estado_mayor_caida   = "AGU"
+    pct_critico_nacional = 15.0
+    ultimos             = df_proyecciones.copy()
+    agrupado_geo        = df_proyecciones.copy()
+    agrupado_geo['tamaño_deterioro'] = 5
+```
+
+# ⚠️ KPIs
+
+## Row {height=25%}
+```{python}
+#| content: valuebox
+#| title: "Nivel Promedio Nacional en México"
+dict(icon="droplet-half", color="primary", value=f"{nivel_actual:.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Variación del nivel entre 2024 y 2025"
+color_var = "danger" if variacion_interanual < 0 else "success"
+dict(icon="graph-down-arrow", color=color_var, value=f"{variacion_interanual:+.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Presas Nacionales en Desabasto (<10%)"
+dict(icon="exclamation-triangle-fill", color="danger", value=f"{pct_critico:.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Presas Nacionalen Estado (>50%)"
+dict(icon="check-circle-fill", color="success", value=f"{pct_optimo:.1f} %")
+```
+
+## Row {height=25%}
+```{python}
+#| content: valuebox
+#| title: "Estado Actual vs Promedio Histórico"
+color_desv = "warning" if desviacion_global < 0 else "info"
+dict(icon="moisture", color=color_desv, value=f"{desviacion_global:+.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Pronóstico de Mañana con el Modelo de UPIIT Machine"
+dict(icon="cpu-fill", color="secondary", value=f"{pred_promedio_ia:.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Agua que Perdemos por el Calor (+2°C)"
+dict(icon="thermometer-sun", color="danger", value=f"{impacto_climatico_ia:+.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Riesgo de Colapso de Presas Tras Aumento de Tempearatura"
+dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_colapso_ia:.1f} %")
+```
+
+## Row {height=50%}
+
+### Column {width=100%}
+```{python}
+#| title: "Desastre Hídrico"
+#Aquí creamos un pequeño diccionario para poder producir una nube de palabras
+palabras = {
+    "Sequía": 100, "México": 90, "Desabasto": 80, "Desabasto": 70, 
+    "Día Cero": 95, "Evaporación": 60, "Presas": 75, "Estrés Hídrico": 85, 
+    "Racionamiento": 45, "Alerta": 55, "Peligro": 40, "Aridez": 80, "Lluvia": 30,
+    "Deforestación": 20, "Deshidratación": 10, "Emergencia": 5, "Crisis": 15,
+    "Erosión": 25, "Escasez": 30, "Efecto Invernadero": 5
+}
+#Hacemos uso de la librería wordcloud para generar una nube de palabras
+wc = WordCloud(width=3000, height=400, background_color="black", colormap="Reds").generate_from_frequencies(palabras)
+#Aquí y en la mayoría de imágenes hicimos ajuste de proporción del tamaño de figura a pantalla
+fig_wc, ax = plt.subplots(figsize=(10, 5), facecolor="black")
+ax.imshow(wc, interpolation="bilinear")
+ax.axis("off")
+plt.tight_layout(pad=0)
+plt.show()
+```
+
+# 📉 Tendencia Histórica
+
+## Row {height=35%}
+```{python}
+#| content: valuebox
+#| title: "Pendiente Regresiva a Largo Plazo"
+color_pend = "danger" if pendiente_tendencia < 0 else "success"
+dict(icon="graph-down" if pendiente_tendencia < 0 else "graph-up", color=color_pend, value=f"{pendiente_tendencia:+.2f} %/año")
+```
+```{python}
+#| content: valuebox
+#| title: "Año Mínimo Histórico"
+dict(icon="calendar-x", color="warning", value=f"{año_mas_critico}")
+```
+```{python}
+#| content: valuebox
+#| title: "Volatilidad del Sistema (StdDev)"
+dict(icon="moisture", color="info", value=f"±{volatilidad_sistema:.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Cambio Acumulado Últimos 5 Años"
+color_5y = "danger" if cambio_5_años < 0 else "success"
+dict(icon="clock-history", color=color_5y, value=f"{cambio_5_años:+.1f} %")
+```
+
+## Row {height=65%}
+
+### Column {width=100%}
+```{python}
+#| title: "Evolución Consolidada a Nivel País (Suavizada SMA 90-Días)"
+if not error_mode:
+    #Calculamos la media móvil de 90 días para suavizar la tendencia
+    df_actual['Tendencia_Suavizada'] = (
+        df_actual['nivel_hidrico_pct'].rolling(window=90, min_periods=1).mean()
+    )
+    #Definimos la figura
+    fig_ts = go.Figure()
+    #Agregamos la traza de la tendencia suavizada
+    _ = fig_ts.add_trace(go.Scatter(
+        x=df_actual['fecha'],
+        y=df_actual['Tendencia_Suavizada'],
+        mode='lines',
+        name="SMA 3 meses (%)",
+        line=dict(color='#00d2ff', width=3)
+    ))
+    #Ajustamos los ejes
+    _ = fig_ts.update_xaxes(type='date')
+    _ = fig_ts.update_layout(
+        template="plotly_dark",
+        margin=dict(l=20, r=20, t=10, b=10),
+        xaxis_title="Tiempo Histórico",
+        yaxis_title="Operatividad Efectiva (%)",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    fig_ts.show()
+```
+
+# 🗺️ Radiografía Histórica
+
+## Row {height=25%}
+```{python}
+#| content: valuebox
+#| title: "Estado con Nivel Crítico (Promedio)"
+dict(icon="geo-alt-fill", color="danger", value=f"{estado_menor_nivel}")
+```
+```{python}
+#| content: valuebox
+#| title: "Estado con Mayor Caída Histórica"
+dict(icon="bar-chart", color="warning", value=f"{estado_mayor_caida}")
+```
+```{python}
+#| content: valuebox
+#| title: "Estrés Relativo Nacional (<40%)"
+dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_critico_nacional:.1f} %")
+```
+
+## Row {height=75%}
+
+### Column {width=100%}
+```{python}
+#| title: "Animación Cronológica: Estrés y Desabasto Territorial"
+if not error_mode:
+    #Filtramos los datos para que solo se muestren los primeros días de cada mes
+    reducido = agrupado_geo[agrupado_geo['año_mes'].str.endswith("-01")]
+    #Definimos la figura
+    if len(reducido) > 0:
+        #Aquí generamos el mapa con la animación con ayuda de plotly en dónde configuramos distintos argumentos
+        fig_map = px.scatter_geo(
+            reducido,
+            lat="latitud", lon="longitud",
+            color="nivel_hidrico_pct",
+            hover_name="nombre_presa",
+            size="nivel_hidrico_pct",
+            animation_frame="año_mes",
+            hover_data={"tamaño_deterioro": False, "deterioro_historico": ":.1f"},
+            color_continuous_scale="RdYlBu",
+            range_color=[10, 90],
+            projection="natural earth",
+            scope="north america",
+            center={"lat": 24.0, "lon": -102.5},
+            labels={"nivel_hidrico_pct": "Llenado %"}
+        )
+        
+        # Ajustes Geográficos
+        _ = fig_map.update_geos(
+            fitbounds="locations", visible=False,
+            showcountries=True, countrycolor="white",
+            showsubunits=True, subunitcolor="gray",
+            bgcolor="rgba(0,0,0,0)"
+        )
+        
+        # Ajustes de Layout y Posicionamiento de Controles
+        _ = fig_map.update_layout(
+            template="plotly_dark",
+            margin={"r": 10, "t": 80, "l": 10, "b": 10}, # Margen superior aumentado para el título
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="white", size=10),
+            
+            # 1. Ajuste de la BARRA DE COLOR (Vertical)
+            coloraxis_colorbar=dict(
+                title=dict(text="Llenado %", side="right", font=dict(size=11)),
+                thicknessmode="pixels", thickness=18,
+                lenmode="fraction", len=0.8,    # Barra más grande
+                yanchor="middle", y=0.5,        # Barra centrada verticalmente
+                xanchor="left", x=0.08,         # Más a la derecha para que el título tenga espacio
+                outlinewidth=0,
+                ticks="outside"
+            ),
+            
+            # 2. Ajuste del SLIDER (Línea de tiempo horizontal)
+            sliders=[dict(
+                currentvalue={"prefix": "Periodo: ", "font": {"size": 14}, "visible": True, "offset": 30},
+                pad={"t": 0, "b": 20},          # Reduce el espacio superior del slider (lo sube)
+                len=0.9,                        # Lo hace un poco más estrecho para que no choque
+                x=0.05,                         # Lo centra horizontalmente
+                y=0.1                           # Ajusta la altura (0 es fondo, 1 es tope)
+            )],
+            
+            # 3. Ajuste de botones (Play/Pause)
+            updatemenus=[dict(
+                direction="left",
+                pad={"r": 10, "t": 20},         # Ajusta los botones de reproducción
+                x=0.05,
+                y=0.1,
+                xanchor="right",
+                yanchor="top"
+            )]
+        )
+        fig_map.show()
+```
+
+# 📍 Actualidad
+
+## Row {height=100%}
+
+### Column {width=100%}
+```{python}
+#| title: "Dashboard Exploratorio 1:1. Pasa el Mouse sobre cualquier entidad."
+if not error_mode:
+    #Unimos los datos de las presas con las proyecciones calculadas con el Modelo de Upiit Machine
+    df_merge = pd.merge(
+        ultimos,
+        df_proyecciones[['presa_id', 'pred_pct_Base', 'pred_pct_Temp_+2C']],
+        on='presa_id', how='left'
+    )
+    #Calculamos los días de vida de cada presa
+    df_merge['Días de Vida'] = (df_merge['nivel_hidrico_pct'] * 2.5).round(0)
+
+    #Definimos la figura
+    fig_criticas = px.scatter_mapbox(
+        df_merge,
+        lat="latitud", lon="longitud",
+        color="nivel_hidrico_pct",
+        hover_name="nombre_presa",
+        hover_data=["Días de Vida", "volumen_hm3", "temp_max_c", "pred_pct_Temp_+2C"],
+        size="nivel_hidrico_pct",
+        color_continuous_scale="Viridis",
+        zoom=4.5,
+        center={"lat": 23.6345, "lon": -102.5528},
+        labels={
+            "nivel_hidrico_pct": "% Actual Nivel",
+            "pred_pct_Temp_+2C": "A +2°C Predicción"
+        }
+    )
+    _ = fig_criticas.update_layout(
+        mapbox_style="carto-darkmatter",
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        #Ajuste de la barra de color
+        coloraxis_colorbar=dict(
+            title=dict(
+                text="% Actual Nivel",
+                side="right",         # Mueve el título al lado derecho de la barra
+                font=dict(size=12)
+            ),
+            thicknessmode="pixels", 
+            thickness=15,            # La hace un poco más delgada para dar espacio
+            lenmode="fraction", 
+            len=0.6,                 # Controla el largo vertical de la barra
+            yanchor="middle", 
+            y=0.5,                   # Centrada verticalmente
+            xpad=15                  # Padding horizontal para que el título no toque la barra
+        )
+    )
+    fig_criticas.show()
+```
+
+# 🗺️ Escenarios Térmicos IA
+
+## Row {height=25%}
+```{python}
+#| content: valuebox
+#| title: "Desecación Punta Registrada (+3°C Anomalía)"
+if not error_mode:
+    p_3c = 'pred_pct_Temp_+3C'
+    if p_3c not in df_proyecciones.columns:
+        df_proyecciones[p_3c] = df_proyecciones['pred_pct_Temp_+2C'] - 5 
+    delta_prom = (df_proyecciones['pred_pct_Base'] - df_proyecciones[p_3c]).max()
+else:
+    delta_prom = 30.0
+dict(icon="thermometer-high", color="warning", value=f"-{delta_prom:.1f} %")
+```
+
+## Row {height=75%}
+
+### Column {width=50%}
+```{python}
+#| title: "Acelerador de Estrés (+2°C Anomalía)"
+if not error_mode:
+    df_impacto = df_proyecciones.copy()
+    df_impacto['Pérdida_PCT'] = df_impacto['pred_pct_Base'] - df_impacto['pred_pct_Temp_+2C']
+    df_impacto['Magnitud_Pérdida'] = df_impacto['Pérdida_PCT'].clip(lower=1.0)
+    fig_mapa_delta = px.scatter_mapbox(
+        df_impacto, lat="latitud", lon="longitud",
+        color="Pérdida_PCT", size="Magnitud_Pérdida",
+        color_continuous_scale="Inferno", hover_name="nombre_presa",
+        zoom=3.8, center={"lat": 24.0, "lon": -102.5},
+        labels={"Pérdida_PCT": "Pérdida Nivel (%)"}
+    )
+    # Bloque para fig_mapa_delta
+    _ = fig_mapa_delta.update_layout(
+        mapbox_style="carto-darkmatter",
+        # Márgenes a 0 para que el mapa llegue hasta los bordes del cuadro
+        margin=dict(l=0, r=0, t=30, b=0), 
+        height=600, # Ajusta este valor según el tamaño de tu fila en Quarto
+        paper_bgcolor='rgba(0,0,0,0)',
+        #Ajuste de la barra de color
+        coloraxis_colorbar=dict(
+            title=dict(text="Pérdida %", side="right"),
+            thickness=15,
+            len=0.8,
+            xpad=20,
+            yanchor="middle",
+            y=0.5
+        )
+    )
+    fig_mapa_delta.show()
+```
+
+### Column {width=50%}
+```{python}
+#| title: "b) Fricción Térmica (Slider de Escenarios Multi-Grados)"
+if not error_mode:
+    #Definimos un dataframe para almacenar los datos
+    df_long = []
+    p_3c = 'pred_pct_Temp_+3C'
+    if p_3c not in df_proyecciones.columns:
+        df_proyecciones[p_3c] = df_proyecciones['pred_pct_Temp_+2C'] - 5 
+    
+    for esc in ['+1C', '+2C', '+3C']:
+        col = f'pred_pct_Temp_{esc}'
+        df_t = df_proyecciones.copy()
+        df_t['Escenario'] = esc
+        df_t['Delta_Calor'] = df_t['pred_pct_Base'] - df_t[col]
+        df_t['Delta_Abs'] = df_t['Delta_Calor'].abs().clip(lower=1)
+        df_long.append(df_t)
+        
+    df_anim = pd.concat(df_long)
+    
+    fig_slider = px.scatter_mapbox(
+        df_anim, lat="latitud", lon="longitud",
+        color="Delta_Calor", size="Delta_Abs",
+        animation_frame="Escenario",
+        color_continuous_scale="Reds", 
+        hover_name="nombre_presa",
+        # Limpiamos los datos que se muestran
+        hover_data={
+            "Escenario": True,
+            "Delta_Calor": ":.2f",  # Solo 2 decimales
+            "Delta_Abs": False,     # Ocultamos la columna interna de tamaño
+            "latitud": False, 
+            "longitud": False
+        },
+        zoom=3.5, # Ajustamos el zoom para que se vea todo México mejor
+        center={"lat": 24.0, "lon": -102.5},
+        labels={"Delta_Calor": "Δ (%)"},
+        range_color=[0, df_anim['Delta_Calor'].max()]
+    )
+
+    _ = fig_slider.update_layout(
+        mapbox_style="carto-darkmatter",
+        margin=dict(l=0, r=0, t=30, b=5), # Margen inferior mínimo
+        height=650, 
+        paper_bgcolor='rgba(0,0,0,0)',
+        
+        #Ajuste fino del slider
+        sliders=[{
+            "currentvalue": {
+                "prefix": "Escenario: ",
+                "font": {"size": 14, "color": "#00d2ff"}, # Letra azul pequeña y elegante [cite: 50]
+                "visible": True,
+                #Aumentamos el offset para que el texto "flote" arriba de la barra
+                "offset": 25 
+            },
+            "pad": {"b": 15, "t": 10}, 
+            "len": 0.9,
+            "x": 0.05,
+            "y": 0.02 
+        }],
+        
+        #Ajuste de los botones play/stop
+        updatemenus=[{
+            "type": "buttons",
+            "showactive": False,
+            "direction": "left",
+            "pad": {"r": 10, "t": 15}, 
+            "x": 0.08,
+            "y": 0.02, # Alineado con el slider
+            "xanchor": "right",
+            "yanchor": "bottom"
+        }],
+
+        #Ajuste de la barra de color
+        coloraxis_colorbar=dict(
+            title=dict(text="Caída %", side="right", font=dict(size=10)), # Título también más pequeño
+            thickness=12,
+            len=0.7,
+            yanchor="middle",
+            y=0.5,
+            xpad=10
+        )
+    )
+    fig_slider.show()
+```
+
+# 🔮 Proyección y Riesgo IA
+
+## Row {height=25%}
+```{python}
+#| content: valuebox
+#| title: "Presas Abatiendo la Cota Crítica (<20%) a Futuro"
+if not error_mode:
+    criticas_futuro = (df_proyecciones['pred_pct_Base'] < 40).sum() / len(df_proyecciones) * 100
+else:
+    criticas_futuro = 25.0
+dict(icon="graph-down-arrow", color="danger", value=f"{criticas_futuro:.1f} %")
+```
+
+## Row {height=75%}
+
+### Column {width=50%}
+```{python}
+#| title: "a) Proyección Hídrica Nacional (Estadística de Cota Neutra)"
+if not error_mode:
+    fig_linea = go.Figure()
+    
+    if 'Tendencia_Suavizada' not in df_actual.columns:
+        df_actual['Tendencia_Suavizada'] = df_actual['nivel_hidrico_pct'].rolling(90, min_periods=1).mean()
+        
+    _ = fig_linea.add_trace(go.Scatter(
+        x=df_actual['fecha'], y=df_actual['Tendencia_Suavizada'],
+        mode='lines', name="SMA 3 meses (%)", line=dict(color='#00d2ff', width=3)
+    ))
+    
+    fecha_base = df_actual['fecha'].max()
+    fechas_futuras = pd.date_range(start=fecha_base, periods=6, freq='YE')
+    mediana_actual = df_actual['Tendencia_Suavizada'].iloc[-1]
+    mediana_futura = df_proyecciones['pred_pct_Base'].mean()
+    
+    v_base = np.linspace(mediana_actual, mediana_futura, 6)
+    incertidumbre = volatilidad_sistema * np.linspace(0.1, 1.2, 6) 
+    
+    v_alta = v_base + incertidumbre
+    v_baja = v_base - incertidumbre
+    
+    _ = fig_linea.add_trace(go.Scatter(
+        x=np.concatenate([fechas_futuras, fechas_futuras[::-1]]),
+        y=np.concatenate([v_alta, v_baja[::-1]]),
+        fill='toself', fillcolor='rgba(255, 165, 0, 0.2)',
+        line=dict(color='rgba(255,255,255,0)'),
+        hoverinfo="skip", showlegend=True, name="Banda de Incertidumbre"
+    ))
+    
+    _ = fig_linea.add_trace(go.Scatter(
+        x=fechas_futuras, y=v_base, mode='lines+markers',
+        name="Predicción IA", line=dict(color='orange', width=3, dash='dash')
+    ))
+    
+    _ = fig_linea.update_xaxes(type='date')
+    _ = fig_linea.update_layout(
+        template="plotly_dark",
+        margin=dict(l=20, r=20, t=10, b=10),
+        xaxis_title="Tiempo Histórico",
+        yaxis_title="Operatividad Efectiva (%)",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        hovermode="x unified",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5
+        )
+    )
+    fig_linea.show()
+```
+
+### Column {width=50%}
+```{python}
+#| title: "c) Top 10 Presas Vulnerables por Extrema Fricción (+3°C)"
+if not error_mode:
+    df_top = df_proyecciones.copy()
+    p_3c = 'pred_pct_Temp_+3C'
+    if p_3c not in df_top.columns:
+        df_top[p_3c] = df_top['pred_pct_Temp_+2C'] - 5 
+
+    df_top['Desviacion_3C'] = df_top['pred_pct_Base'] - df_top[p_3c]
+    df_10 = df_top.sort_values(by='Desviacion_3C', ascending=False).head(10).copy()
+    
+    df_10['Color_Riesgo'] = np.where(df_10['pred_pct_Base'] < 20, 'Crítico (<20%)', 'Estable')
+    
+    fig_barras = px.bar(
+        df_10, x="Desviacion_3C", y="nombre_presa", orientation='h',
+        color="Color_Riesgo", color_discrete_map={'Crítico (<20%)': 'red', 'Estable': '#00d2ff'},
+        labels={"Desviacion_3C": "Fricción Acumulada (%)", "nombre_presa": ""}
+    )
+    _ = fig_barras.update_layout(yaxis={'categoryorder':'total ascending'}, template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=20, t=30, b=20), showlegend=True)
+    fig_barras.show()
+```
+
+# ⚖️ Decisiones
+
+## Row {height=60%}
+
+### Column {width=100%}
+```{python}
+#| title: "Matriz Prescriptiva de Toma de Decisión: Actual vs Transformador"
+if not error_mode:
+    df_ultimos = ultimos[['presa_id', 'nivel_hidrico_pct']].copy()
+    df_ultimos = df_ultimos.groupby('presa_id').mean().reset_index()
+    
+    df_matriz = pd.merge(df_proyecciones, df_ultimos, on='presa_id', how='inner')
+    
+    umbral_x = 40
+    umbral_y = 20
+    
+    def clasificar_cuadrante(row):
+        h_actual = row['nivel_hidrico_pct']
+        h_futuro = row['pred_pct_Base']
+        if h_actual >= umbral_x and h_futuro >= umbral_y:
+            return "Estables (Cota Alta)"
+        elif h_actual >= umbral_x and h_futuro < umbral_y:
+            return "Riesgo Futuro (Ahorro Urgente)"
+        elif h_actual < umbral_x and h_futuro < umbral_y:
+            return "Críticas (Emergencia)"
+        else:
+            return "Recuperación Improbable (No Prioridad)"
+
+    df_matriz['Cuadrante'] = df_matriz.apply(clasificar_cuadrante, axis=1)
+    color_map = {
+        "Estables (Cota Alta)": "#00cc96", 
+        "Riesgo Futuro (Ahorro Urgente)": "#FFA15A", 
+        "Críticas (Emergencia)": "#EF553B", 
+        "Recuperación Improbable (No Prioridad)": "#ab63fa"
+    }
+
+    fig_matriz = px.scatter(
+        df_matriz, x="nivel_hidrico_pct", y="pred_pct_Base",
+        color="Cuadrante", color_discrete_map=color_map,
+        hover_name="nombre_presa",
+        labels={
+            "nivel_hidrico_pct": "Nivel Actual Reportado (%)",
+            "pred_pct_Base": "Proyección Inteligencia Artificial (%)"
+        }
+    )
+    
+    _ = fig_matriz.add_vline(x=umbral_x, line_dash="dash", line_color="white", opacity=0.5)
+    _ = fig_matriz.add_hline(y=umbral_y, line_dash="dash", line_color="white", opacity=0.5)
+    
+    _ = fig_matriz.update_layout(
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=20, r=20, t=10, b=10),
+        # --- SEPARACIÓN MÁXIMA FORZADA ---
+        legend=dict(
+            title="",
+            orientation="h",
+            yanchor="bottom",
+            y=1.1,                  
+            xanchor="center",
+            x=0.5,
+            # Aumentamos drásticamente el ancho de cada entrada
+            # 250px suele ser el límite antes de que Plotly cree una segunda fila
+            entrywidth=250,         
+            entrywidthmode="pixels",
+            # Añadimos espacio extra entre el icono y el texto
+            itemwidth=40,
+            # Alineación vertical para evitar que el texto baile
+            valign="middle"
+        )
+    )
+    fig_matriz.show()
+```
+
+## Row {height=40%}
+
+### Column {width=50%}
+```{python}
+#| title: "Top 10 Presas con Mayor Urgencia de Intervención"
+if not error_mode:
+    # Filtramos valores mayores a 0.1 para evitar ruido de datos vacíos [cite: 66]
+    df_validos = df_proyecciones[df_proyecciones['pred_pct_Base'] > 0.1].copy()
+    
+    # Ordenamos y tomamos las 10 reales [cite: 66]
+    df_criticas = df_validos.sort_values(by="pred_pct_Base", ascending=True).head(10).copy()
+    
+    fig_crit_bar = px.bar(
+        df_criticas, x="pred_pct_Base", y="nombre_presa", orientation='h',
+        color="pred_pct_Base", color_continuous_scale="Reds_r",
+        labels={"pred_pct_Base": "Reserva Asignada IA (%)", "nombre_presa": ""}
+    )
+    
+    _ = fig_crit_bar.update_layout(
+        yaxis={'categoryorder':'total descending'},
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=10, r=20, t=10, b=20),
+        coloraxis_showscale=False
+    )
+    fig_crit_bar.show()
+```
+
+### Column {width=50%}
+```{python}
+#| title: "Colapso Geográfico (Proyección Media por Entidad)"
+if not error_mode:
+    df_estados = df_proyecciones.copy()
+    df_estados['estado'] = df_estados['estado_id'].str.split('-').str[-1]
+    
+    df_agg = df_estados.groupby('estado')['pred_pct_Base'].mean().sort_values(ascending=True).head(10).reset_index()
+
+    fig_est_bar = px.bar(
+        df_agg, x="pred_pct_Base", y="estado", orientation='h',
+        color="pred_pct_Base", color_continuous_scale="Reds_r",
+        labels={"pred_pct_Base": "Operatividad IA Grupal (%)", "estado": ""}
+    )
+    
+    _ = fig_est_bar.update_layout(
+        yaxis={'categoryorder':'total descending'},
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=10, r=20, t=10, b=20),
+        coloraxis_showscale=False
+    )
+    fig_est_bar.show()
+```
+
