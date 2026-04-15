@@ -8,12 +8,12 @@ format:
     orientation: rows
     nav-buttons:
       - icon: github
-        href: https://github.com/
+        href: https://github.com/bryanhzaz/UpiitMachineHackODS
     pages:
       - title:  KPIs
       - title:  Tendencia Histórica
       - title:  Animación Nacional
-      - title:  Zonas Críticas (Hover)
+      - title:  Zonas Críticas 
       - title:  Escenarios Térmicos IA
       - title:  Proyección y Riesgo IA
       - title:  Decisiones
