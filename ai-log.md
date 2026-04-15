@@ -93,11 +93,11 @@ Optamos usar herremientas de inteligencia artifial únicamente para tareas técn
 
 
 ### NO usamos la IA para hacer lo siguiente: 
--Selección del problema, hicimos un ejercicio propio para determinar, que ODS abarcar, que problemática llevar y que impacto queríamos generar.
--La selección de las fuentes de datos fue por navegación propia del equipo, por lo que no fue consultada la IA.
--Selección de algoritmo para nuestro modelo predictivo, una de nuestras especialidades como estudiantes en la Licenciatura en Ciencia de datos, es el uso de aprendizaje máquina, por lo que la arquitectura, entrenamiento, es de nuestra completa autoría.
--Uso de tecnologías de cómputo de alto desempeño, fueron ideas propias y no consultadas por la IA.
--Empleo de algoritmos como la distancia euclidiana, cálculo e interpretación de métricas, fue plenamente de nuestro conocimiento, además de que son ideas novedosas que se nos fueron ocurriendo durante la marcha para obtener nuestro conjunto de datos final.
--El uso de archivos Parquet, fue gracias al Dr. Guillermo Barrios del Valle, lo cual resultó en una solución eficiente para GitHub.
--El cálculo de cualquier tarjeta con estadísticas o visualziación en general, fueron ideas propias, estilos propios y acomodo de escalas hechas por el equipo, no IA.
--Se intentó imitar una metodología llamada CRISP-DM asociada a la minería de datos, dónde el producto final es un tablero, haciendo uso de las tecnologías permitidas por la competencia, llegamos a ello, esto no fue sugerido ni consultado a IA.
+- Selección del problema, hicimos un ejercicio propio para determinar, que ODS abarcar, que problemática llevar y que impacto queríamos generar.
+- La selección de las fuentes de datos fue por navegación propia del equipo, por lo que no fue consultada la IA.
+- Selección de algoritmo para nuestro modelo predictivo, una de nuestras especialidades como estudiantes en la Licenciatura en Ciencia de datos, es el uso de aprendizaje máquina, por lo que la arquitectura, entrenamiento, es de nuestra completa autoría.
+- Uso de tecnologías de cómputo de alto desempeño, fueron ideas propias y no consultadas por la IA.
+- Empleo de algoritmos como la distancia euclidiana, cálculo e interpretación de métricas, fue plenamente de nuestro conocimiento, además de que son ideas novedosas que se nos fueron ocurriendo durante la marcha para obtener nuestro conjunto de datos final.
+- El uso de archivos Parquet, fue gracias al Dr. Guillermo Barrios del Valle, lo cual resultó en una solución eficiente para GitHub.
+- El cálculo de cualquier tarjeta con estadísticas o visualziación en general, fueron ideas propias, estilos propios y acomodo de escalas hechas por el equipo, no IA.
+- Se intentó imitar una metodología llamada CRISP-DM asociada a la minería de datos, dónde el producto final es un tablero, haciendo uso de las tecnologías permitidas por la competencia, llegamos a ello, esto no fue sugerido ni consultado a IA.
