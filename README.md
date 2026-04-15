@@ -1,8 +1,8 @@
 # 💧 UPIIT Machine 
 Integrantes:
--Elisa Naomi Alvarado Sanchez
--Ricardo Polock Suarez Geovani
--Bryan Hernández Alvarez 
+1. Elisa Naomi Alvarado Sanchez
+1. Ricardo Polock Suarez Geovani
+1. Bryan Hernández Alvarez 
 Bienvenido al repositorio oficial del proyecto **"¿Cuáles son las presas mexicanas más vulnerables y cómo podemos anticipar su agotamiento?"** desarrollado por el equipo UPIIT Machine para el HackODS UNAM 2026. 
 
 Este proyecto es un tablero interactivo que basa parte de sus contenidos en Inteligencia Artificial diseñada desde cero por el equipo, para visibilizar, analizar y anticipar el nivel de estrés hídrico y riesgo de desabasto en las presas de México frente a diversos escenarios de cambio climático.
@@ -197,5 +197,6 @@ Notas:
 4. Hacemos énfasis a que el proceso de web scraping se hizo directamente a archivos estructurados que las instituciones proveen como DATOS ABIERTOS en distintos formatos y que no fue hecho para extraer contenido en páginas HTML o parecido.
 ---
 *Hecho por el equipo UPIIT Machine.* 
-#   U p i i t M a c h i n e H a c k O D S  
+#   U p i i t M a c h i n e H a c k O D S 
+ 
  
