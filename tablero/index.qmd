@@ -4,7 +4,7 @@ author: "UPIIT Machine"
 format: 
   dashboard:
     theme: darkly
-    css: estilos.css
+    #css: estilos.css
     orientation: rows
     nav-buttons:
       - icon: github
@@ -21,6 +21,7 @@ execute:
   echo: false
   warning: false
 ---
+
 ```{python}
 #| context: setup
 #| cache: false
@@ -33,6 +34,15 @@ import warnings
 import random
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
+
+hover_style = dict(
+    hoverlabel=dict(
+        bgcolor="rgba(33, 33, 33, 0.9)",
+        font_size=13,
+        font_color="white",
+        font_family="Arial"
+    )
+)
 
 #Fijamos una semilla para que los resultados sean reproducibles
 random.seed(42)
@@ -189,46 +199,46 @@ except Exception as e:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Nivel Promedio Nacional en México"
+#| title: "Salud del Agua en México"
 dict(icon="droplet-half", color="primary", value=f"{nivel_actual:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Variación del nivel entre 2024 y 2025"
+#| title: "Cambio en el Último Año"
 color_var = "danger" if variacion_interanual < 0 else "success"
 dict(icon="graph-down-arrow", color=color_var, value=f"{variacion_interanual:+.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Presas Nacionales en Desabasto (<10%)"
+#| title: "Presas en Nivel Crítico"
 dict(icon="exclamation-triangle-fill", color="danger", value=f"{pct_critico:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Presas Nacionalen Estado (>50%)"
+#| title: "Presas con Nivel Seguro"
 dict(icon="check-circle-fill", color="success", value=f"{pct_optimo:.1f} %")
 ```
 
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Estado Actual vs Promedio Histórico"
+#| title: "Diferencia vs Años Anteriores"
 color_desv = "warning" if desviacion_global < 0 else "info"
 dict(icon="moisture", color=color_desv, value=f"{desviacion_global:+.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Pronóstico de Mañana con el Modelo de UPIIT Machine"
+#| title: "Predicción IA para el Futuro"
 dict(icon="cpu-fill", color="secondary", value=f"{pred_promedio_ia:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Agua que Perdemos por el Calor (+2°C)"
+#| title: "Impacto por Calentamiento (+2°C)"
 dict(icon="thermometer-sun", color="danger", value=f"{impacto_climatico_ia:+.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Riesgo de Colapso de Presas Tras Aumento de Tempearatura"
+#| title: "Agua Perdida por Aumento de Temperatura"
 dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_colapso_ia:.1f} %")
 ```
 
@@ -260,23 +270,23 @@ plt.show()
 ## Row {height=35%}
 ```{python}
 #| content: valuebox
-#| title: "Pendiente Regresiva a Largo Plazo"
+#| title: "Ritmo de Pérdida Anual"
 color_pend = "danger" if pendiente_tendencia < 0 else "success"
 dict(icon="graph-down" if pendiente_tendencia < 0 else "graph-up", color=color_pend, value=f"{pendiente_tendencia:+.2f} %/año")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Año Mínimo Histórico"
+#| title: "Año con Mayor Escasez"
 dict(icon="calendar-x", color="warning", value=f"{año_mas_critico}")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Volatilidad del Sistema (StdDev)"
+#| title: "Inestabilidad del Clima"
 dict(icon="moisture", color="info", value=f"±{volatilidad_sistema:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Cambio Acumulado Últimos 5 Años"
+#| title: "Balance de los Últimos 5 Años"
 color_5y = "danger" if cambio_5_años < 0 else "success"
 dict(icon="clock-history", color=color_5y, value=f"{cambio_5_años:+.1f} %")
 ```
@@ -287,29 +297,33 @@ dict(icon="clock-history", color=color_5y, value=f"{cambio_5_años:+.1f} %")
 ```{python}
 #| title: "Evolución Consolidada a Nivel País (Suavizada SMA 90-Días)"
 if not error_mode:
-    #Calculamos la media móvil de 90 días para suavizar la tendencia
+    # Calculamos la media móvil de 90 días para suavizar la tendencia
     df_actual['Tendencia_Suavizada'] = (
         df_actual['nivel_hidrico_pct'].rolling(window=90, min_periods=1).mean()
     )
-    #Definimos la figura
+    
     fig_ts = go.Figure()
-    #Agregamos la traza de la tendencia suavizada
+    
     _ = fig_ts.add_trace(go.Scatter(
         x=df_actual['fecha'],
         y=df_actual['Tendencia_Suavizada'],
         mode='lines',
-        name="SMA 3 meses (%)",
-        line=dict(color='#00d2ff', width=3)
+        name="Tendencia Promedio", # Nombre más humano
+        line=dict(color='#00d2ff', width=3),
+        # Definimos información clara al pasar el cursor
+        hovertemplate='<b>Fecha:</b> %{x|%d %b, %Y}<br><b>Agua disponible:</b> %{y:.1f}% de capacidad<extra></extra>'
     ))
-    #Ajustamos los ejes
+    
     _ = fig_ts.update_xaxes(type='date')
     _ = fig_ts.update_layout(
+        **hover_style,
         template="plotly_dark",
         margin=dict(l=20, r=20, t=10, b=10),
-        xaxis_title="Tiempo Histórico",
-        yaxis_title="Operatividad Efectiva (%)",
+        xaxis_title="Años de Registro",
+        yaxis_title="Nivel de Agua (%)",
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
+        plot_bgcolor='rgba(0,0,0,0)',
+        hovermode="x unified" # Une la información en una sola ficha vertical
     )
     fig_ts.show()
 ```
@@ -319,17 +333,17 @@ if not error_mode:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Estado con Nivel Crítico (Promedio)"
+#| title: "Estado con Mayor Escasez"
 dict(icon="geo-alt-fill", color="danger", value=f"{estado_menor_nivel}")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Estado con Mayor Caída Histórica"
+#| title: "Mayor Deterioro por Entidad"
 dict(icon="bar-chart", color="warning", value=f"{estado_mayor_caida}")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Estrés Relativo Nacional (<40%)"
+#| title: "Zonas en Alerta de Desabasto"
 dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_critico_nacional:.1f} %")
 ```
 
@@ -337,13 +351,11 @@ dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_critico_nacional:.1
 
 ### Column {width=100%}
 ```{python}
-#| title: "Animación Cronológica: Estrés y Desabasto Territorial"
+#| title: "Evolución Histórica: ¿Cómo se ha vaciado México?"
 if not error_mode:
-    #Filtramos los datos para que solo se muestren los primeros días de cada mes
     reducido = agrupado_geo[agrupado_geo['año_mes'].str.endswith("-01")]
-    #Definimos la figura
+    
     if len(reducido) > 0:
-        #Aquí generamos el mapa con la animación con ayuda de plotly en dónde configuramos distintos argumentos
         fig_map = px.scatter_geo(
             reducido,
             lat="latitud", lon="longitud",
@@ -351,16 +363,35 @@ if not error_mode:
             hover_name="nombre_presa",
             size="nivel_hidrico_pct",
             animation_frame="año_mes",
-            hover_data={"tamaño_deterioro": False, "deterioro_historico": ":.1f"},
+            # Pasamos los datos adicionales
+            custom_data=["deterioro_historico"],
+            hover_data={
+                "latitud": False, "longitud": False, "año_mes": False,
+                "nivel_hidrico_pct": False, "deterioro_historico": False
+            },
             color_continuous_scale="RdYlBu",
             range_color=[10, 90],
             projection="natural earth",
             scope="north america",
-            center={"lat": 24.0, "lon": -102.5},
-            labels={"nivel_hidrico_pct": "Llenado %"}
+            center={"lat": 24.0, "lon": -102.5}
         )
         
-        # Ajustes Geográficos
+        # Definimos la plantilla que queremos
+        plantilla_info = (
+            "<b>Presa:</b> %{hovertext}<br>" +
+            "<b>Nivel de Agua:</b> %{marker.size:.1f}%<br>" +
+            "<b>Deterioro Histórico:</b> %{customdata[0]:.1f}%" +
+            "<extra></extra>"
+        )
+
+        # 1. Aplicamos a la traza inicial
+        _ = fig_map.update_traces(hovertemplate=plantilla_info)
+
+        # 2. CRUCIAL: Aplicamos la plantilla a cada cuadro de la animación
+        for frame in fig_map.frames:
+            for trace in frame.data:
+                trace.hovertemplate = plantilla_info
+
         _ = fig_map.update_geos(
             fitbounds="locations", visible=False,
             showcountries=True, countrycolor="white",
@@ -368,42 +399,32 @@ if not error_mode:
             bgcolor="rgba(0,0,0,0)"
         )
         
-        # Ajustes de Layout y Posicionamiento de Controles
         _ = fig_map.update_layout(
+            **hover_style,
             template="plotly_dark",
-            margin={"r": 10, "t": 80, "l": 10, "b": 10}, # Margen superior aumentado para el título
+            margin={"r": 10, "t": 80, "l": 10, "b": 10},
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color="white", size=10),
-            
-            # 1. Ajuste de la BARRA DE COLOR (Vertical)
             coloraxis_colorbar=dict(
-                title=dict(text="Llenado %", side="right", font=dict(size=11)),
+                title=dict(text="Llenado (%)", side="right", font=dict(size=11)),
                 thicknessmode="pixels", thickness=18,
-                lenmode="fraction", len=0.8,    # Barra más grande
-                yanchor="middle", y=0.5,        # Barra centrada verticalmente
-                xanchor="left", x=0.08,         # Más a la derecha para que el título tenga espacio
+                lenmode="fraction", len=0.8,
+                yanchor="middle", y=0.5,
+                xanchor="left", x=0.08,
                 outlinewidth=0,
                 ticks="outside"
             ),
-            
-            # 2. Ajuste del SLIDER (Línea de tiempo horizontal)
             sliders=[dict(
-                currentvalue={"prefix": "Periodo: ", "font": {"size": 14}, "visible": True, "offset": 30},
-                pad={"t": 0, "b": 20},          # Reduce el espacio superior del slider (lo sube)
-                len=0.9,                        # Lo hace un poco más estrecho para que no choque
-                x=0.05,                         # Lo centra horizontalmente
-                y=0.1                           # Ajusta la altura (0 es fondo, 1 es tope)
+                currentvalue={"prefix": "Mes analizado: ", "font": {"size": 14}, "visible": True, "offset": 30},
+                pad={"t": 0, "b": 20},
+                len=0.9, x=0.05, y=0.1
             )],
-            
-            # 3. Ajuste de botones (Play/Pause)
             updatemenus=[dict(
                 direction="left",
-                pad={"r": 10, "t": 20},         # Ajusta los botones de reproducción
-                x=0.05,
-                y=0.1,
-                xanchor="right",
-                yanchor="top"
+                pad={"r": 10, "t": 20},
+                x=0.05, y=0.1,
+                xanchor="right", yanchor="top"
             )]
         )
         fig_map.show()
@@ -415,52 +436,55 @@ if not error_mode:
 
 ### Column {width=100%}
 ```{python}
-#| title: "Dashboard Exploratorio 1:1. Pasa el Mouse sobre cualquier entidad."
+#| title: "Análisis de Supervivencia: ¿Cuánta agua queda y cuánto tiempo durará?"
 if not error_mode:
-    #Unimos los datos de las presas con las proyecciones calculadas con el Modelo de Upiit Machine
+    # Unimos los datos
     df_merge = pd.merge(
         ultimos,
         df_proyecciones[['presa_id', 'pred_pct_Base', 'pred_pct_Temp_+2C']],
         on='presa_id', how='left'
     )
-    #Calculamos los días de vida de cada presa
+    
+    # Calculamos días de vida y preparamos el nombre del estado
     df_merge['Días de Vida'] = (df_merge['nivel_hidrico_pct'] * 2.5).round(0)
+    df_merge['Estado_Nombre'] = df_merge['estado_id'].str.split('-').str[-1]
 
-    #Definimos la figura
     fig_criticas = px.scatter_mapbox(
         df_merge,
         lat="latitud", lon="longitud",
         color="nivel_hidrico_pct",
         hover_name="nombre_presa",
-        hover_data=["Días de Vida", "volumen_hm3", "temp_max_c", "pred_pct_Temp_+2C"],
+        # CRUCIAL: Pasamos todos los datos explícitamente para que NO se vean vacíos
+        custom_data=["nivel_hidrico_pct", "Días de Vida", "pred_pct_Temp_+2C", "volumen_hm3", "Estado_Nombre"],
         size="nivel_hidrico_pct",
         color_continuous_scale="Viridis",
         zoom=4.5,
-        center={"lat": 23.6345, "lon": -102.5528},
-        labels={
-            "nivel_hidrico_pct": "% Actual Nivel",
-            "pred_pct_Temp_+2C": "A +2°C Predicción"
-        }
+        center={"lat": 23.6345, "lon": -102.5528}
     )
+
+    # Diseño de la ficha ultra-entendible
+    _ = fig_criticas.update_traces(
+        hovertemplate=(
+            "<b>%{hovertext}</b> (%{customdata[4]})<br>" +
+            "<br>" +
+            "<b>Agua disponible hoy:</b> %{customdata[0]:.1f}% de su capacidad<br>" +
+            "<b>Si no llueve se agota en:</b> %{customdata[1]} días (estimado)<br>" +
+            "<b>Si el calor sube +2°C:</b> Quedaría con %{customdata[2]:.1f}%<br>" +
+            "<b>Tamaño de la presa:</b> %{customdata[3]:.1f} hm³" +
+            "<extra></extra>"
+        )
+    )
+
     _ = fig_criticas.update_layout(
         mapbox_style="carto-darkmatter",
+        **hover_style,
         margin={"r": 0, "t": 0, "l": 0, "b": 0},
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        #Ajuste de la barra de color
         coloraxis_colorbar=dict(
-            title=dict(
-                text="% Actual Nivel",
-                side="right",         # Mueve el título al lado derecho de la barra
-                font=dict(size=12)
-            ),
-            thicknessmode="pixels", 
-            thickness=15,            # La hace un poco más delgada para dar espacio
-            lenmode="fraction", 
-            len=0.6,                 # Controla el largo vertical de la barra
-            yanchor="middle", 
-            y=0.5,                   # Centrada verticalmente
-            xpad=15                  # Padding horizontal para que el título no toque la barra
+            title=dict(text="Nivel Actual", side="right"),
+            thickness=15,
+            len=0.6
         )
     )
     fig_criticas.show()
@@ -471,7 +495,15 @@ if not error_mode:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Desecación Punta Registrada (+3°C Anomalía)"
+#| title: "Pérdida Máxima por Calor Extremo"
+if not error_mode:
+    p_3c = 'pred_pct_Temp_+3C'
+    if p_3c not in df_proyecciones.columns:
+        df_proyecciones[p_3c] = df_proyecciones['pred_pct_Temp_+2C'] - 5 
+    delta_prom = (df_proyecciones['pred_pct_Base'] - df_proyecciones[p_3c]).max()
+else:
+    delta_prom = 30.0#| content: valuebox
+#| title: "Pérdida Máxima por Calor Extremo"
 if not error_mode:
     p_3c = 'pred_pct_Temp_+3C'
     if p_3c not in df_proyecciones.columns:
@@ -480,34 +512,56 @@ if not error_mode:
 else:
     delta_prom = 30.0
 dict(icon="thermometer-high", color="warning", value=f"-{delta_prom:.1f} %")
+
+dict(
+    icon="thermometer-high", 
+    color="warning", 
+    value=f"{delta_prom:.1f} %",
+    # Forzamos el centrado del texto
+    styles="text-align: center;"
+)
 ```
 
 ## Row {height=75%}
 
 ### Column {width=50%}
 ```{python}
-#| title: "Acelerador de Estrés (+2°C Anomalía)"
+#| title: "Acelerador de Estrés: El impacto directo del calor (+2°C)"
 if not error_mode:
     df_impacto = df_proyecciones.copy()
     df_impacto['Pérdida_PCT'] = df_impacto['pred_pct_Base'] - df_impacto['pred_pct_Temp_+2C']
     df_impacto['Magnitud_Pérdida'] = df_impacto['Pérdida_PCT'].clip(lower=1.0)
+    df_impacto['Estado_Nombre'] = df_impacto['estado_id'].str.split('-').str[-1]
+
     fig_mapa_delta = px.scatter_mapbox(
         df_impacto, lat="latitud", lon="longitud",
         color="Pérdida_PCT", size="Magnitud_Pérdida",
-        color_continuous_scale="Inferno", hover_name="nombre_presa",
-        zoom=3.8, center={"lat": 24.0, "lon": -102.5},
-        labels={"Pérdida_PCT": "Pérdida Nivel (%)"}
+        color_continuous_scale="Inferno", 
+        hover_name="nombre_presa",
+        custom_data=["Pérdida_PCT", "pred_pct_Base", "pred_pct_Temp_+2C", "Estado_Nombre"],
+        zoom=3.8, center={"lat": 24.0, "lon": -102.5}
     )
-    # Bloque para fig_mapa_delta
+
+    # Versión limpia sin emojis
+    _ = fig_mapa_delta.update_traces(
+        hovertemplate=(
+            "<b>Presa: %{hovertext}</b> (%{customdata[3]})<br>" +
+            "<br>" +
+            "Pérdida por calor: -%{customdata[0]:.1f}% adicionales<br>" +
+            "Nivel sin anomalía: %{customdata[1]:.1f}%<br>" +
+            "Nivel final con +2°C: %{customdata[2]:.1f}%" +
+            "<extra></extra>"
+        )
+    )
+
     _ = fig_mapa_delta.update_layout(
+        **hover_style,
         mapbox_style="carto-darkmatter",
-        # Márgenes a 0 para que el mapa llegue hasta los bordes del cuadro
         margin=dict(l=0, r=0, t=30, b=0), 
-        height=600, # Ajusta este valor según el tamaño de tu fila en Quarto
+        height=600,
         paper_bgcolor='rgba(0,0,0,0)',
-        #Ajuste de la barra de color
         coloraxis_colorbar=dict(
-            title=dict(text="Pérdida %", side="right"),
+            title=dict(text="Agua perdida (%)", side="right"),
             thickness=15,
             len=0.8,
             xpad=20,
@@ -520,9 +574,8 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "b) Fricción Térmica (Slider de Escenarios Multi-Grados)"
+#| title: "Impacto Progresivo: Pérdida de Agua según el Aumento de Temperatura"
 if not error_mode:
-    #Definimos un dataframe para almacenar los datos
     df_long = []
     p_3c = 'pred_pct_Temp_+3C'
     if p_3c not in df_proyecciones.columns:
@@ -534,6 +587,8 @@ if not error_mode:
         df_t['Escenario'] = esc
         df_t['Delta_Calor'] = df_t['pred_pct_Base'] - df_t[col]
         df_t['Delta_Abs'] = df_t['Delta_Calor'].abs().clip(lower=1)
+        # Extraemos el estado para el tooltip
+        df_t['Estado_Nombre'] = df_t['estado_id'].str.split('-').str[-1]
         df_long.append(df_t)
         
     df_anim = pd.concat(df_long)
@@ -544,33 +599,40 @@ if not error_mode:
         animation_frame="Escenario",
         color_continuous_scale="Reds", 
         hover_name="nombre_presa",
-        # Limpiamos los datos que se muestran
-        hover_data={
-            "Escenario": True,
-            "Delta_Calor": ":.2f",  # Solo 2 decimales
-            "Delta_Abs": False,     # Ocultamos la columna interna de tamaño
-            "latitud": False, 
-            "longitud": False
-        },
-        zoom=3.5, # Ajustamos el zoom para que se vea todo México mejor
+        # Pasamos los datos para el tooltip animado
+        custom_data=["Delta_Calor", "Escenario", "Estado_Nombre"],
+        zoom=3.5,
         center={"lat": 24.0, "lon": -102.5},
-        labels={"Delta_Calor": "Δ (%)"},
         range_color=[0, df_anim['Delta_Calor'].max()]
     )
 
+    # Plantilla de información clara y profesional
+    plantilla_calor = (
+        "<b>Presa: %{hovertext}</b> (%{customdata[2]})<br>" +
+        "<br>" +
+        "Escenario de calentamiento: %{customdata[1]}<br>" +
+        "Agua perdida por evaporación: %{customdata[0]:.1f}%<br>" +
+        "<extra></extra>"
+    )
+
+    # Aplicamos la plantilla a la traza inicial y a todos los frames
+    _ = fig_slider.update_traces(hovertemplate=plantilla_calor)
+    for frame in fig_slider.frames:
+        for trace in frame.data:
+            trace.hovertemplate = plantilla_calor
+
     _ = fig_slider.update_layout(
         mapbox_style="carto-darkmatter",
-        margin=dict(l=0, r=0, t=30, b=5), # Margen inferior mínimo
+        **hover_style,
+        margin=dict(l=0, r=0, t=30, b=5),
         height=650, 
         paper_bgcolor='rgba(0,0,0,0)',
         
-        #Ajuste fino del slider
         sliders=[{
             "currentvalue": {
-                "prefix": "Escenario: ",
-                "font": {"size": 14, "color": "#00d2ff"}, # Letra azul pequeña y elegante [cite: 50]
+                "prefix": "Aumento Global: ",
+                "font": {"size": 14, "color": "#00d2ff"},
                 "visible": True,
-                #Aumentamos el offset para que el texto "flote" arriba de la barra
                 "offset": 25 
             },
             "pad": {"b": 15, "t": 10}, 
@@ -579,21 +641,19 @@ if not error_mode:
             "y": 0.02 
         }],
         
-        #Ajuste de los botones play/stop
         updatemenus=[{
             "type": "buttons",
             "showactive": False,
             "direction": "left",
             "pad": {"r": 10, "t": 15}, 
             "x": 0.08,
-            "y": 0.02, # Alineado con el slider
+            "y": 0.02,
             "xanchor": "right",
             "yanchor": "bottom"
         }],
 
-        #Ajuste de la barra de color
         coloraxis_colorbar=dict(
-            title=dict(text="Caída %", side="right", font=dict(size=10)), # Título también más pequeño
+            title=dict(text="Pérdida (%)", side="right", font=dict(size=10)),
             thickness=12,
             len=0.7,
             yanchor="middle",
@@ -609,19 +669,26 @@ if not error_mode:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Presas Abatiendo la Cota Crítica (<20%) a Futuro"
+#| title: "Riesgo de Desabasto a Futuro"
 if not error_mode:
     criticas_futuro = (df_proyecciones['pred_pct_Base'] < 40).sum() / len(df_proyecciones) * 100
 else:
     criticas_futuro = 25.0
-dict(icon="graph-down-arrow", color="danger", value=f"{criticas_futuro:.1f} %")
+
+# Añadimos un estilo para forzar el alineado al centro
+dict(
+    icon="graph-down-arrow", 
+    color="danger", 
+    value=f"{criticas_futuro:.1f} %",
+    styles="text-align: center;"
+)
 ```
 
 ## Row {height=75%}
 
 ### Column {width=50%}
 ```{python}
-#| title: "a) Proyección Hídrica Nacional (Estadística de Cota Neutra)"
+#| title: "Proyección Hídrica Nacional: Tendencia y Pronóstico IA"
 if not error_mode:
     fig_linea = go.Figure()
     
@@ -630,7 +697,10 @@ if not error_mode:
         
     _ = fig_linea.add_trace(go.Scatter(
         x=df_actual['fecha'], y=df_actual['Tendencia_Suavizada'],
-        mode='lines', name="SMA 3 meses (%)", line=dict(color='#00d2ff', width=3)
+        mode='lines', 
+        name="Nivel Histórico", 
+        line=dict(color='#00d2ff', width=3),
+        hovertemplate="<b>Periodo:</b> %{x|%d %b %Y}<br><b>Nivel:</b> %{y:.1f}% de capacidad<extra></extra>"
     ))
     
     fecha_base = df_actual['fecha'].max()
@@ -649,29 +719,38 @@ if not error_mode:
         y=np.concatenate([v_alta, v_baja[::-1]]),
         fill='toself', fillcolor='rgba(255, 165, 0, 0.2)',
         line=dict(color='rgba(255,255,255,0)'),
-        hoverinfo="skip", showlegend=True, name="Banda de Incertidumbre"
+        hoverinfo="skip", 
+        showlegend=True, 
+        name="Margen de Error"
     ))
     
     _ = fig_linea.add_trace(go.Scatter(
         x=fechas_futuras, y=v_base, mode='lines+markers',
-        name="Predicción IA", line=dict(color='orange', width=3, dash='dash')
+        name="Pronóstico IA", 
+        line=dict(color='orange', width=3, dash='dash'),
+        hovertemplate="<b>Año proyectado:</b> %{x|%Y}<br><b>Nivel estimado:</b> %{y:.1f}% de capacidad<extra></extra>"
     ))
     
     _ = fig_linea.update_xaxes(type='date')
+    
     _ = fig_linea.update_layout(
+        **hover_style,
         template="plotly_dark",
-        margin=dict(l=20, r=20, t=10, b=10),
-        xaxis_title="Tiempo Histórico",
-        yaxis_title="Operatividad Efectiva (%)",
+        margin=dict(l=20, r=20, t=50, b=10),
+        xaxis_title="Registro de Tiempo",
+        yaxis_title="Nivel de Agua (%)",
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         hovermode="x unified",
         legend=dict(
             orientation="h",
             yanchor="bottom",
-            y=1.02,
+            y=1.05,
             xanchor="center",
-            x=0.5
+            x=0.5,
+            title="",
+            entrywidth=180,
+            entrywidthmode="pixels"
         )
     )
     fig_linea.show()
@@ -679,7 +758,7 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "c) Top 10 Presas Vulnerables por Extrema Fricción (+3°C)"
+#| title: "Impacto Crítico: Presas con Mayor Pérdida por Calor (+3°C)"
 if not error_mode:
     df_top = df_proyecciones.copy()
     p_3c = 'pred_pct_Temp_+3C'
@@ -687,16 +766,52 @@ if not error_mode:
         df_top[p_3c] = df_top['pred_pct_Temp_+2C'] - 5 
 
     df_top['Desviacion_3C'] = df_top['pred_pct_Base'] - df_top[p_3c]
+    # Extraemos el estado para dar contexto
+    df_top['Estado_Nombre'] = df_top['estado_id'].str.split('-').str[-1]
+    
     df_10 = df_top.sort_values(by='Desviacion_3C', ascending=False).head(10).copy()
     
-    df_10['Color_Riesgo'] = np.where(df_10['pred_pct_Base'] < 20, 'Crítico (<20%)', 'Estable')
+    df_10['Estado_Riesgo'] = np.where(df_10['pred_pct_Base'] < 20, 'Nivel Crítico', 'Nivel Estable')
     
     fig_barras = px.bar(
         df_10, x="Desviacion_3C", y="nombre_presa", orientation='h',
-        color="Color_Riesgo", color_discrete_map={'Crítico (<20%)': 'red', 'Estable': '#00d2ff'},
-        labels={"Desviacion_3C": "Fricción Acumulada (%)", "nombre_presa": ""}
+        color="Estado_Riesgo", 
+        color_discrete_map={'Nivel Crítico': 'red', 'Nivel Estable': '#00d2ff'},
+        # Pasamos datos adicionales para la ficha de información
+        custom_data=["Desviacion_3C", "pred_pct_Base", "Estado_Nombre"],
+        labels={"Desviacion_3C": "Agua perdida por calor (%)", "nombre_presa": "Presa"}
     )
-    _ = fig_barras.update_layout(yaxis={'categoryorder':'total ascending'}, template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=20, t=30, b=20), showlegend=True)
+    
+    # Humanización de la ficha de información
+    _ = fig_barras.update_traces(
+        hovertemplate=(
+            "<b>Presa: %{y}</b> (%{customdata[2]})<br>" +
+            "<br>" +
+            "Agua perdida por calor: %{customdata[0]:.1f}%<br>" +
+            "Nivel actual de la presa: %{customdata[1]:.1f}%<br>" +
+            "<extra></extra>"
+        )
+    )
+    
+    _ = fig_barras.update_layout(
+        yaxis={'categoryorder':'total ascending'},
+        **hover_style,
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=10, r=20, t=50, b=20),
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.05,
+            xanchor="center",
+            x=0.5,
+            title="",
+            entrywidth=150,
+            entrywidthmode="pixels"
+        )
+    )
     fig_barras.show()
 ```
 
@@ -706,12 +821,15 @@ if not error_mode:
 
 ### Column {width=100%}
 ```{python}
-#| title: "Matriz Prescriptiva de Toma de Decisión: Actual vs Transformador"
+#| title: "Matriz de Prioridad: Nivel Actual vs Pronóstico de Supervivencia"
 if not error_mode:
     df_ultimos = ultimos[['presa_id', 'nivel_hidrico_pct']].copy()
     df_ultimos = df_ultimos.groupby('presa_id').mean().reset_index()
     
     df_matriz = pd.merge(df_proyecciones, df_ultimos, on='presa_id', how='inner')
+    
+    # Extraemos el nombre del estado para dar contexto geográfico
+    df_matriz['Estado_Nombre'] = df_matriz['estado_id'].str.split('-').str[-1]
     
     umbral_x = 40
     umbral_y = 20
@@ -720,30 +838,45 @@ if not error_mode:
         h_actual = row['nivel_hidrico_pct']
         h_futuro = row['pred_pct_Base']
         if h_actual >= umbral_x and h_futuro >= umbral_y:
-            return "Estables (Cota Alta)"
+            return "Seguras (Nivel Óptimo)"
         elif h_actual >= umbral_x and h_futuro < umbral_y:
-            return "Riesgo Futuro (Ahorro Urgente)"
+            return "Vulnerables (Ahorro Preventivo)"
         elif h_actual < umbral_x and h_futuro < umbral_y:
-            return "Críticas (Emergencia)"
+            return "Urgentes (Acción Inmediata)"
         else:
-            return "Recuperación Improbable (No Prioridad)"
+            return "En Observación (Baja Prioridad)"
 
-    df_matriz['Cuadrante'] = df_matriz.apply(clasificar_cuadrante, axis=1)
+    df_matriz['Estatus'] = df_matriz.apply(clasificar_cuadrante, axis=1)
+    
     color_map = {
-        "Estables (Cota Alta)": "#00cc96", 
-        "Riesgo Futuro (Ahorro Urgente)": "#FFA15A", 
-        "Críticas (Emergencia)": "#EF553B", 
-        "Recuperación Improbable (No Prioridad)": "#ab63fa"
+        "Seguras (Nivel Óptimo)": "#00cc96", 
+        "Vulnerables (Ahorro Preventivo)": "#FFA15A", 
+        "En Observación (Baja Prioridad)": "#ab63fa",
+        "Urgentes (Acción Inmediata)": "#EF553B"
     }
 
     fig_matriz = px.scatter(
         df_matriz, x="nivel_hidrico_pct", y="pred_pct_Base",
-        color="Cuadrante", color_discrete_map=color_map,
+        color="Estatus", color_discrete_map=color_map,
         hover_name="nombre_presa",
+        # Pasamos los datos para la ficha personalizada
+        custom_data=["nivel_hidrico_pct", "pred_pct_Base", "Estado_Nombre"],
         labels={
-            "nivel_hidrico_pct": "Nivel Actual Reportado (%)",
-            "pred_pct_Base": "Proyección Inteligencia Artificial (%)"
+            "nivel_hidrico_pct": "Nivel Hoy (%)",
+            "pred_pct_Base": "Nivel Proyectado por IA (%)"
         }
+    )
+    
+    # Humanización de la ficha de información (Tooltip)
+    _ = fig_matriz.update_traces(
+        hovertemplate=(
+            "<b>Presa: %{hovertext}</b> (%{customdata[2]})<br>" +
+            "<br>" +
+            "Situación actual: %{customdata[0]:.1f}% de agua<br>" +
+            "Predicción IA: %{customdata[1]:.1f}% de agua<br>" +
+            "Estatus: %{fullData.name}<br>" +
+            "<extra></extra>"
+        )
     )
     
     _ = fig_matriz.add_vline(x=umbral_x, line_dash="dash", line_color="white", opacity=0.5)
@@ -751,24 +884,20 @@ if not error_mode:
     
     _ = fig_matriz.update_layout(
         template="plotly_dark",
+        **hover_style,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=20, r=20, t=10, b=10),
-        # --- SEPARACIÓN MÁXIMA FORZADA ---
+        margin=dict(l=20, r=20, t=50, b=10),
         legend=dict(
             title="",
             orientation="h",
             yanchor="bottom",
-            y=1.1,                  
+            y=1.05,                  
             xanchor="center",
             x=0.5,
-            # Aumentamos drásticamente el ancho de cada entrada
-            # 250px suele ser el límite antes de que Plotly cree una segunda fila
             entrywidth=250,         
             entrywidthmode="pixels",
-            # Añadimos espacio extra entre el icono y el texto
             itemwidth=40,
-            # Alineación vertical para evitar que el texto baile
             valign="middle"
         )
     )
@@ -779,21 +908,38 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "Top 10 Presas con Mayor Urgencia de Intervención"
+#| title: "Prioridades de Emergencia: Las 10 Presas con Menor Reserva de Agua"
 if not error_mode:
-    # Filtramos valores mayores a 0.1 para evitar ruido de datos vacíos [cite: 66]
+    # Filtramos valores mayores a 0.1 para evitar ruido de datos vacíos
     df_validos = df_proyecciones[df_proyecciones['pred_pct_Base'] > 0.1].copy()
     
-    # Ordenamos y tomamos las 10 reales [cite: 66]
+    # Extraemos el estado para dar contexto geográfico
+    df_validos['Estado_Nombre'] = df_validos['estado_id'].str.split('-').str[-1]
+    
+    # Ordenamos y tomamos las 10 con menor nivel
     df_criticas = df_validos.sort_values(by="pred_pct_Base", ascending=True).head(10).copy()
     
     fig_crit_bar = px.bar(
         df_criticas, x="pred_pct_Base", y="nombre_presa", orientation='h',
         color="pred_pct_Base", color_continuous_scale="Reds_r",
-        labels={"pred_pct_Base": "Reserva Asignada IA (%)", "nombre_presa": ""}
+        # Pasamos los datos para la ficha personalizada
+        custom_data=["pred_pct_Base", "Estado_Nombre"],
+        labels={"pred_pct_Base": "Agua disponible (%)", "nombre_presa": "Presa"}
+    )
+    
+    # Humanización de la ficha de información (Tooltip)
+    _ = fig_crit_bar.update_traces(
+        hovertemplate=(
+            "<b>Presa: %{y}</b> (%{customdata[1]})<br>" +
+            "<br>" +
+            "Reserva de agua: %{customdata[0]:.1f}% de capacidad<br>" +
+            "Estatus: Riesgo Crítico<br>" +
+            "<extra></extra>"
+        )
     )
     
     _ = fig_crit_bar.update_layout(
+        **hover_style,
         yaxis={'categoryorder':'total descending'},
         template="plotly_dark",
         paper_bgcolor='rgba(0,0,0,0)', 
@@ -806,23 +952,40 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "Colapso Geográfico (Proyección Media por Entidad)"
+#| title: "Colapso Geográfico: Los 10 Estados con Menos Agua en sus Presas"
 if not error_mode:
     df_estados = df_proyecciones.copy()
+    # Limpiamos el nombre del estado
     df_estados['estado'] = df_estados['estado_id'].str.split('-').str[-1]
     
+    # Calculamos el promedio por estado y tomamos los 10 más bajos
     df_agg = df_estados.groupby('estado')['pred_pct_Base'].mean().sort_values(ascending=True).head(10).reset_index()
 
     fig_est_bar = px.bar(
         df_agg, x="pred_pct_Base", y="estado", orientation='h',
         color="pred_pct_Base", color_continuous_scale="Reds_r",
-        labels={"pred_pct_Base": "Operatividad IA Grupal (%)", "estado": ""}
+        # Pasamos los datos para la ficha personalizada
+        custom_data=["pred_pct_Base"],
+        labels={"pred_pct_Base": "Nivel Promedio (%)", "estado": "Estado"}
+    )
+    
+    # Humanización de la ficha de información (Tooltip)
+    _ = fig_est_bar.update_traces(
+        hovertemplate=(
+            "<b>Estado: %{y}</b><br>" +
+            "<br>" +
+            "Disponibilidad promedio regional: %{customdata[0]:.1f}%<br>" +
+            "Estatus: Alerta Crítica por Entidad<br>" +
+            "<extra></extra>"
+        )
     )
     
     _ = fig_est_bar.update_layout(
+        **hover_style,
         yaxis={'categoryorder':'total descending'},
         template="plotly_dark",
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=10, r=20, t=10, b=20),
         coloraxis_showscale=False
     )
