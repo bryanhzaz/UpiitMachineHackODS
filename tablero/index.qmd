@@ -4,7 +4,7 @@ author: "UPIIT Machine"
 format: 
   dashboard:
     theme: darkly
-    #css: estilos.css
+    css: estilos.css
     orientation: rows
     nav-buttons:
       - icon: github
@@ -194,7 +194,7 @@ except Exception as e:
     agrupado_geo['tamaño_deterioro'] = 5
 ```
 
-# ⚠️ KPIs
+# ⚠️ 1. Resumen Nacional
 
 ## Row {height=25%}
 ```{python}
@@ -223,7 +223,7 @@ dict(icon="check-circle-fill", color="success", value=f"{pct_optimo:.1f} %")
 
 ### Column {width=100%}
 ```{python}
-#| title: "Desastre Hídrico"
+#| title: "Presentamos un tablero interactivo impulsado por un modelo predictivo de Inteligencia Artificial propio, que diagnostica el nivel de estrés hídrico de 210 presas en México. Nuestro objetivo es visibilizar las vulnerabilidades históricas y anticipar el agotamiento del agua frente a distintos escenarios de sobrecalentamiento global, facilitando la toma de decisiones preventivas."
 #Aquí creamos un pequeño diccionario para poder producir una nube de palabras
 palabras = {
     "Sequía": 100, "México": 90, "Desabasto": 80, "Desabasto": 70, 
@@ -264,7 +264,7 @@ dict(icon="thermometer-sun", color="danger", value=f"{impacto_climatico_ia:+.1f}
 dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_colapso_ia:.1f} %")
 ```
 
-# 📉 Tendencia Histórica
+# 📉 2. Tendencia Histórica
 
 ## Row {height=35%}
 ```{python}
@@ -307,10 +307,11 @@ if not error_mode:
         x=df_actual['fecha'],
         y=df_actual['Tendencia_Suavizada'],
         mode='lines',
-        name="Tendencia Promedio", # Nombre más humano
+        name="Tendencia Promedio",
         line=dict(color='#00d2ff', width=3),
-        # Definimos información clara al pasar el cursor
-        hovertemplate='<b>Fecha:</b> %{x|%d %b, %Y}<br><b>Agua disponible:</b> %{y:.1f}% de capacidad<extra></extra>'
+        # Usamos variables de formato de Plotly. 
+        # El separador de línea se maneja con el modo 'x unified' del layout.
+        hovertemplate='Fecha: %{x|%d %b, %Y}  Agua: %{y:.1f}%<extra></extra>'
     ))
     
     _ = fig_ts.update_xaxes(type='date')
@@ -322,12 +323,18 @@ if not error_mode:
         yaxis_title="Nivel de Agua (%)",
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        hovermode="x unified" # Une la información en una sola ficha vertical
+        # 'x unified' crea una bandera vertical que muestra los datos 
+        # de forma elegante sin necesidad de etiquetas HTML manuales.
+        hovermode="x unified" 
     )
+    
+    # Personalizamos la apariencia de la etiqueta unificada para que sea legible
+    _ = fig_ts.update_traces(hoverinfo="all")
+    
     fig_ts.show()
 ```
 
-# 🗺️ Radiografía Histórica
+# 🗺️ 3. Radiografía Histórica
 
 ## Row {height=25%}
 ```{python}
@@ -352,21 +359,29 @@ dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_critico_nacional:.1
 ```{python}
 #| title: "Un viaje en el tiempo: ¿Cómo se ha vaciado México? (Interactúa con el botón de play)"
 if not error_mode:
-    reducido = agrupado_geo[agrupado_geo['año_mes'].str.endswith("-01")]
+    reducido = agrupado_geo[agrupado_geo['año_mes'].str.endswith("-01")].copy()
     
     if len(reducido) > 0:
+        # 1. Pre-formateamos las columnas para incluir las unidades
+        reducido['Nivel de Llenado'] = reducido['nivel_hidrico_pct'].map('{:.1f}%'.format)
+        reducido['Deterioro Histórico'] = reducido['deterioro_historico'].map('{:.1f}%'.format)
+
         fig_map = px.scatter_geo(
             reducido,
             lat="latitud", lon="longitud",
             color="nivel_hidrico_pct",
-            hover_name="nombre_presa",
+            hover_name="nombre_presa", # Aparecerá arriba en negrita
             size="nivel_hidrico_pct",
             animation_frame="año_mes",
-            # Pasamos los datos adicionales
-            custom_data=["deterioro_historico"],
+            # 2. Configuramos hover_data para mostrar solo lo que queremos
             hover_data={
-                "latitud": False, "longitud": False, "año_mes": False,
-                "nivel_hidrico_pct": False, "deterioro_historico": False
+                "latitud": False, 
+                "longitud": False, 
+                "año_mes": False,
+                "nivel_hidrico_pct": False, 
+                "deterioro_historico": False,
+                "Nivel de Llenado": True,
+                "Deterioro Histórico": True
             },
             color_continuous_scale="RdYlBu",
             range_color=[10, 90],
@@ -375,21 +390,8 @@ if not error_mode:
             center={"lat": 24.0, "lon": -102.5}
         )
         
-        # Definimos la plantilla que queremos
-        plantilla_info = (
-            "<b>Presa:</b> %{hovertext}<br>" +
-            "<b>Nivel de Agua:</b> %{marker.size:.1f}%<br>" +
-            "<b>Deterioro Histórico:</b> %{customdata[0]:.1f}%" +
-            "<extra></extra>"
-        )
-
-        # 1. Aplicamos a la traza inicial
-        _ = fig_map.update_traces(hovertemplate=plantilla_info)
-
-        # 2. CRUCIAL: Aplicamos la plantilla a cada cuadro de la animación
-        for frame in fig_map.frames:
-            for trace in frame.data:
-                trace.hovertemplate = plantilla_info
+        # Ya no necesitamos plantilla_info ni el bucle de 'for frame in fig_map.frames'
+        # Plotly Express ya aplicó el formato a todos los cuadros automáticamente.
 
         _ = fig_map.update_geos(
             fitbounds="locations", visible=False,
@@ -429,51 +431,64 @@ if not error_mode:
         fig_map.show()
 ```
 
-# 📍 Actualidad
+# 📍 4. Actualidad
 
 ## Row {height=100%}
 
 ### Column {width=100%}
 ```{python}
-#| title: "¿Qué pasará con el nivel de agua en las presas? Consulta el nivel actualizado."
+#| title: "¿Qué pasará con el nivel de agua en las presas? ¿Cómo afecta al centro del país?."
 if not error_mode:
-    # Unimos los datos
+    # 1. Unimos los datos
     df_merge = pd.merge(
         ultimos,
         df_proyecciones[['presa_id', 'pred_pct_Base', 'pred_pct_Temp_+2C']],
         on='presa_id', how='left'
     )
     
-    # Calculamos días de vida y preparamos el nombre del estado
-    df_merge['Días de Vida'] = (df_merge['nivel_hidrico_pct'] * 2.5).round(0)
-    df_merge['Estado_Nombre'] = df_merge['estado_id'].str.split('-').str[-1]
+    # 2. Pre-formateo de datos para la tarjeta (sin HTML)
+    # Extraemos el ID del estado (ej. MEX)
+    df_merge['Estado'] = df_merge['estado_id'].str.split('-').str[-1]
+    
+    # Creamos el encabezado: "Nombre de Presa (ESTADO)"
+    df_merge['Encabezado'] = df_merge['nombre_presa'] + " (" + df_merge['Estado'] + ")"
+    
+    # Formateamos los valores con sus unidades
+    df_merge['Agua hoy'] = df_merge['nivel_hidrico_pct'].map('{:.1f}% de su capacidad'.format)
+    df_merge['Agotamiento'] = (df_merge['nivel_hidrico_pct'] * 2.5).round(0).astype(int).astype(str) + " días (estimado)"
+    df_merge['Nivel +2°C'] = df_merge['pred_pct_Temp_+2C'].map('{:.1f}%'.format)
+    df_merge['Capacidad'] = df_merge['volumen_hm3'].map('{:.1f} hm³'.format)
 
+    # 3. Creación de la gráfica
     fig_criticas = px.scatter_mapbox(
         df_merge,
         lat="latitud", lon="longitud",
         color="nivel_hidrico_pct",
-        hover_name="nombre_presa",
-        # CRUCIAL: Pasamos todos los datos explícitamente para que NO se vean vacíos
-        custom_data=["nivel_hidrico_pct", "Días de Vida", "pred_pct_Temp_+2C", "volumen_hm3", "Estado_Nombre"],
+        hover_name="Encabezado", # Aparece en negrita automáticamente
+        # Seleccionamos qué mostrar y qué ocultar
+        hover_data={
+            "latitud": False,
+            "longitud": False,
+            "nivel_hidrico_pct": False,
+            "Agua hoy": True,
+            "Agotamiento": True,
+            "Nivel +2°C": True,
+            "Capacidad": True
+        },
+        # Nombres legibles para las etiquetas de la tarjeta
+        labels={
+            "Agua hoy": "Agua disponible hoy",
+            "Agotamiento": "Si no llueve se agota en",
+            "Nivel +2°C": "Si el calor sube +2°C",
+            "Capacidad": "Tamaño de la presa"
+        },
         size="nivel_hidrico_pct",
         color_continuous_scale="Viridis",
         zoom=4.5,
         center={"lat": 23.6345, "lon": -102.5528}
     )
 
-    # Diseño de la ficha ultra-entendible
-    _ = fig_criticas.update_traces(
-        hovertemplate=(
-            "<b>%{hovertext}</b> (%{customdata[4]})<br>" +
-            "<br>" +
-            "<b>Agua disponible hoy:</b> %{customdata[0]:.1f}% de su capacidad<br>" +
-            "<b>Si no llueve se agota en:</b> %{customdata[1]} días (estimado)<br>" +
-            "<b>Si el calor sube +2°C:</b> Quedaría con %{customdata[2]:.1f}%<br>" +
-            "<b>Tamaño de la presa:</b> %{customdata[3]:.1f} hm³" +
-            "<extra></extra>"
-        )
-    )
-
+    # 4. Ajustes de Layout (se mantiene el estilo oscuro)
     _ = fig_criticas.update_layout(
         mapbox_style="carto-darkmatter",
         **hover_style,
@@ -489,7 +504,7 @@ if not error_mode:
     fig_criticas.show()
 ```
 
-# 🗺️ Simulador Térmico
+# 🗺️ 5. Simulador Térmico
 
 ## Row {height=25%}
 ```{python}
@@ -528,31 +543,52 @@ dict(
 #| title: "Otro escenario no deseado (aumento de 2°C)"
 if not error_mode:
     df_impacto = df_proyecciones.copy()
+    
+    # 1. Preparación de datos y etiquetas (sin HTML)
     df_impacto['Pérdida_PCT'] = df_impacto['pred_pct_Base'] - df_impacto['pred_pct_Temp_+2C']
     df_impacto['Magnitud_Pérdida'] = df_impacto['Pérdida_PCT'].clip(lower=1.0)
-    df_impacto['Estado_Nombre'] = df_impacto['estado_id'].str.split('-').str[-1]
+    
+    # Extraemos el ID del estado (ej. MEX)
+    df_impacto['Estado'] = df_impacto['estado_id'].str.split('-').str[-1]
+    
+    # Encabezado de la tarjeta: "Nombre Presa (ESTADO)"
+    df_impacto['Encabezado'] = df_impacto['nombre_presa'] + " (" + df_impacto['Estado'] + ")"
+    
+    # Formateamos las columnas para que incluyan las unidades directamente
+    # Usamos el signo "-" manual para la pérdida
+    df_impacto['Pérdida Info'] = df_impacto['Pérdida_PCT'].map('-{:.1f}% adicionales'.format)
+    df_impacto['Nivel Base'] = df_impacto['pred_pct_Base'].map('{:.1f}%'.format)
+    df_impacto['Nivel Futuro'] = df_impacto['pred_pct_Temp_+2C'].map('{:.1f}%'.format)
 
+    # 2. Creación de la gráfica con hover_data
     fig_mapa_delta = px.scatter_mapbox(
-        df_impacto, lat="latitud", lon="longitud",
-        color="Pérdida_PCT", size="Magnitud_Pérdida",
+        df_impacto, 
+        lat="latitud", lon="longitud",
+        color="Pérdida_PCT", 
+        size="Magnitud_Pérdida",
         color_continuous_scale="Inferno", 
-        hover_name="nombre_presa",
-        custom_data=["Pérdida_PCT", "pred_pct_Base", "pred_pct_Temp_+2C", "Estado_Nombre"],
-        zoom=3.8, center={"lat": 24.0, "lon": -102.5}
+        hover_name="Encabezado", # Se pone en negrita automáticamente
+        # Seleccionamos las columnas formateadas y ocultamos las técnicas
+        hover_data={
+            "latitud": False,
+            "longitud": False,
+            "Pérdida_PCT": False,
+            "Magnitud_Pérdida": False,
+            "Pérdida Info": True,
+            "Nivel Base": True,
+            "Nivel Futuro": True
+        },
+        # Nombres descriptivos para las etiquetas
+        labels={
+            "Pérdida Info": "Pérdida por calor",
+            "Nivel Base": "Nivel sin anomalía",
+            "Nivel Futuro": "Nivel final con +2°C"
+        },
+        zoom=3.8, 
+        center={"lat": 24.0, "lon": -102.5}
     )
 
-    # Versión limpia sin emojis
-    _ = fig_mapa_delta.update_traces(
-        hovertemplate=(
-            "<b>Presa: %{hovertext}</b> (%{customdata[3]})<br>" +
-            "<br>" +
-            "Pérdida por calor: -%{customdata[0]:.1f}% adicionales<br>" +
-            "Nivel sin anomalía: %{customdata[1]:.1f}%<br>" +
-            "Nivel final con +2°C: %{customdata[2]:.1f}%" +
-            "<extra></extra>"
-        )
-    )
-
+    # 3. Ajustes de Layout (limpio de HTML)
     _ = fig_mapa_delta.update_layout(
         **hover_style,
         mapbox_style="carto-darkmatter",
@@ -576,6 +612,8 @@ if not error_mode:
 #| title: "Y el impacto sería progresivo (interactúa con el deslizador)"
 if not error_mode:
     df_long = []
+    
+    # Aseguramos que existan las columnas de escenarios
     p_3c = 'pred_pct_Temp_+3C'
     if p_3c not in df_proyecciones.columns:
         df_proyecciones[p_3c] = df_proyecciones['pred_pct_Temp_+2C'] - 5 
@@ -583,43 +621,53 @@ if not error_mode:
     for esc in ['+1C', '+2C', '+3C']:
         col = f'pred_pct_Temp_{esc}'
         df_t = df_proyecciones.copy()
+        
+        # 1. Cálculos base
         df_t['Escenario'] = esc
         df_t['Delta_Calor'] = df_t['pred_pct_Base'] - df_t[col]
         df_t['Delta_Abs'] = df_t['Delta_Calor'].abs().clip(lower=1)
-        # Extraemos el estado para el tooltip
-        df_t['Estado_Nombre'] = df_t['estado_id'].str.split('-').str[-1]
+        
+        # 2. Formateo de etiquetas (sin HTML)
+        # Extraemos el ID del estado (ej. MEX)
+        estado_id = df_t['estado_id'].str.split('-').str[-1]
+        df_t['Encabezado'] = df_t['nombre_presa'] + " (" + estado_id + ")"
+        
+        # Columnas formateadas para la tarjeta
+        df_t['Calentamiento'] = esc
+        df_t['Pérdida'] = df_t['Delta_Calor'].map('{:.1f}%'.format)
+        
         df_long.append(df_t)
         
     df_anim = pd.concat(df_long)
     
+    # 3. Creación de la gráfica con hover_data nativo
     fig_slider = px.scatter_mapbox(
         df_anim, lat="latitud", lon="longitud",
-        color="Delta_Calor", size="Delta_Abs",
+        color="Delta_Calor", 
+        size="Delta_Abs",
         animation_frame="Escenario",
         color_continuous_scale="Reds", 
-        hover_name="nombre_presa",
-        # Pasamos los datos para el tooltip animado
-        custom_data=["Delta_Calor", "Escenario", "Estado_Nombre"],
+        hover_name="Encabezado", # Nombre en negrita arriba
+        # Configuramos la tarjeta de información
+        hover_data={
+            "latitud": False,
+            "longitud": False,
+            "Escenario": False,
+            "Delta_Calor": False,
+            "Delta_Abs": False,
+            "Calentamiento": True,
+            "Pérdida": True
+        },
+        labels={
+            "Calentamiento": "Escenario de calentamiento",
+            "Pérdida": "Agua perdida por evaporación"
+        },
         zoom=3.5,
         center={"lat": 24.0, "lon": -102.5},
         range_color=[0, df_anim['Delta_Calor'].max()]
     )
 
-    # Plantilla de información clara y profesional
-    plantilla_calor = (
-        "<b>Presa: %{hovertext}</b> (%{customdata[2]})<br>" +
-        "<br>" +
-        "Escenario de calentamiento: %{customdata[1]}<br>" +
-        "Agua perdida por evaporación: %{customdata[0]:.1f}%<br>" +
-        "<extra></extra>"
-    )
-
-    # Aplicamos la plantilla a la traza inicial y a todos los frames
-    _ = fig_slider.update_traces(hovertemplate=plantilla_calor)
-    for frame in fig_slider.frames:
-        for trace in frame.data:
-            trace.hovertemplate = plantilla_calor
-
+    # 4. Ajustes de Layout
     _ = fig_slider.update_layout(
         mapbox_style="carto-darkmatter",
         **hover_style,
@@ -663,7 +711,7 @@ if not error_mode:
     fig_slider.show()
 ```
 
-# 🔮 Proyección y Riesgo IA
+# 🔮 6. Proyección y Riesgo IA
 
 ## Row {height=25%}
 ```{python}
@@ -694,14 +742,18 @@ if not error_mode:
     if 'Tendencia_Suavizada' not in df_actual.columns:
         df_actual['Tendencia_Suavizada'] = df_actual['nivel_hidrico_pct'].rolling(90, min_periods=1).mean()
         
+    # 1. Traza Histórica
     _ = fig_linea.add_trace(go.Scatter(
         x=df_actual['fecha'], y=df_actual['Tendencia_Suavizada'],
         mode='lines', 
         name="Nivel Histórico", 
         line=dict(color='#00d2ff', width=3),
-        hovertemplate="<b>Periodo:</b> %{x|%d %b %Y}<br><b>Nivel:</b> %{y:.1f}% de capacidad<extra></extra>"
+        # Al usar x unified, el encabezado ya muestra la fecha. 
+        # Solo necesitamos el valor y la unidad.
+        hovertemplate="Nivel: %{y:.1f}% de capacidad<extra></extra>"
     ))
     
+    # --- Lógica de proyecciones (se mantiene igual) ---
     fecha_base = df_actual['fecha'].max()
     fechas_futuras = pd.date_range(start=fecha_base, periods=6, freq='YE')
     mediana_actual = df_actual['Tendencia_Suavizada'].iloc[-1]
@@ -709,10 +761,10 @@ if not error_mode:
     
     v_base = np.linspace(mediana_actual, mediana_futura, 6)
     incertidumbre = volatilidad_sistema * np.linspace(0.1, 1.2, 6) 
-    
     v_alta = v_base + incertidumbre
     v_baja = v_base - incertidumbre
     
+    # 2. Sombra de Incertidumbre (sin cambios en hover ya que está en skip)
     _ = fig_linea.add_trace(go.Scatter(
         x=np.concatenate([fechas_futuras, fechas_futuras[::-1]]),
         y=np.concatenate([v_alta, v_baja[::-1]]),
@@ -723,11 +775,13 @@ if not error_mode:
         name="Margen de Error"
     ))
     
+    # 3. Traza de Pronóstico
     _ = fig_linea.add_trace(go.Scatter(
         x=fechas_futuras, y=v_base, mode='lines+markers',
         name="Pronóstico IA", 
         line=dict(color='orange', width=3, dash='dash'),
-        hovertemplate="<b>Año proyectado:</b> %{x|%Y}<br><b>Nivel estimado:</b> %{y:.1f}% de capacidad<extra></extra>"
+        # Texto plano. Plotly se encarga de la estética en el modo unificado.
+        hovertemplate="Nivel estimado: %{y:.1f}% de capacidad<extra></extra>"
     ))
     
     _ = fig_linea.update_xaxes(type='date')
@@ -740,13 +794,12 @@ if not error_mode:
         yaxis_title="Nivel de Agua (%)",
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
+        # Este es el truco: 'x unified' crea una ficha técnica vertical automática
         hovermode="x unified",
         legend=dict(
             orientation="h",
-            yanchor="bottom",
-            y=1.05,
-            xanchor="center",
-            x=0.5,
+            yanchor="bottom", y=1.05,
+            xanchor="center", x=0.5,
             title="",
             entrywidth=180,
             entrywidthmode="pixels"
@@ -765,33 +818,43 @@ if not error_mode:
         df_top[p_3c] = df_top['pred_pct_Temp_+2C'] - 5 
 
     df_top['Desviacion_3C'] = df_top['pred_pct_Base'] - df_top[p_3c]
-    # Extraemos el estado para dar contexto
-    df_top['Estado_Nombre'] = df_top['estado_id'].str.split('-').str[-1]
     
+    # 1. Preparación de datos y etiquetas (sin HTML)
+    # Extraemos el ID del estado (ej. ZAC)
+    df_top['Estado'] = df_top['estado_id'].str.split('-').str[-1]
+    
+    # Ordenamos y tomamos el top 10
     df_10 = df_top.sort_values(by='Desviacion_3C', ascending=False).head(10).copy()
+    
+    # Encabezado: "Nombre de Presa (ID)"
+    df_10['Encabezado'] = df_10['nombre_presa'] + " (" + df_10['Estado'] + ")"
+    
+    # Formateamos las columnas para la tarjeta
+    df_10['Pérdida por calor'] = df_10['Desviacion_3C'].map('{:.1f}%'.format)
+    df_10['Nivel de la presa'] = df_10['pred_pct_Base'].map('{:.1f}%'.format)
     
     df_10['Estado_Riesgo'] = np.where(df_10['pred_pct_Base'] < 20, 'Nivel Crítico', 'Nivel Estable')
     
+    # 2. Creación de la gráfica con hover_data
     fig_barras = px.bar(
         df_10, x="Desviacion_3C", y="nombre_presa", orientation='h',
         color="Estado_Riesgo", 
         color_discrete_map={'Nivel Crítico': 'red', 'Nivel Estable': '#00d2ff'},
-        # Pasamos datos adicionales para la ficha de información
-        custom_data=["Desviacion_3C", "pred_pct_Base", "Estado_Nombre"],
-        labels={"Desviacion_3C": "Agua perdida por calor (%)", "nombre_presa": "Presa"}
+        hover_name="Encabezado", # Se muestra en negrita arriba
+        # Definimos qué mostrar y qué ocultar
+        hover_data={
+            "Desviacion_3C": False,
+            "nombre_presa": False,
+            "Pérdida por calor": True,
+            "Nivel de la presa": True
+        },
+        labels={
+            "Desviacion_3C": "Agua perdida (%)",
+            "nombre_presa": "Presa"
+        }
     )
     
-    # Humanización de la ficha de información
-    _ = fig_barras.update_traces(
-        hovertemplate=(
-            "<b>Presa: %{y}</b> (%{customdata[2]})<br>" +
-            "<br>" +
-            "Agua perdida por calor: %{customdata[0]:.1f}%<br>" +
-            "Nivel actual de la presa: %{customdata[1]:.1f}%<br>" +
-            "<extra></extra>"
-        )
-    )
-    
+    # 3. Ajustes de Layout (limpio de HTML)
     _ = fig_barras.update_layout(
         yaxis={'categoryorder':'total ascending'},
         **hover_style,
@@ -814,7 +877,7 @@ if not error_mode:
     fig_barras.show()
 ```
 
-# ⚖️ Decisiones
+# ⚖️ 7. Decisiones
 
 ## Row {height=60%}
 
@@ -822,14 +885,13 @@ if not error_mode:
 ```{python}
 #| title: "¿Dónde actuar primero? No todo está pérdido si se toman acciones en las presas vulnerables (Urgentes)"
 if not error_mode:
+    # 1. Preparación y cruce de datos
     df_ultimos = ultimos[['presa_id', 'nivel_hidrico_pct']].copy()
     df_ultimos = df_ultimos.groupby('presa_id').mean().reset_index()
     
     df_matriz = pd.merge(df_proyecciones, df_ultimos, on='presa_id', how='inner')
     
-    # Extraemos el nombre del estado para dar contexto geográfico
-    df_matriz['Estado_Nombre'] = df_matriz['estado_id'].str.split('-').str[-1]
-    
+    # 2. Clasificación de cuadrantes (Lógica original)
     umbral_x = 40
     umbral_y = 20
     
@@ -847,6 +909,17 @@ if not error_mode:
 
     df_matriz['Estatus'] = df_matriz.apply(clasificar_cuadrante, axis=1)
     
+    # 3. Pre-formateo de etiquetas para la ficha (Sin HTML)
+    # Extraemos el ID del estado (ej. MEX)
+    df_matriz['Estado'] = df_matriz['estado_id'].str.split('-').str[-1]
+    
+    # Encabezado: "Nombre de Presa (ID)"
+    df_matriz['Encabezado'] = df_matriz['nombre_presa'] + " (" + df_matriz['Estado'] + ")"
+    
+    # Formateamos los valores numéricos con sus unidades
+    df_matriz['Predicción IA'] = df_matriz['pred_pct_Base'].map('{:.1f}% de agua'.format)
+
+    # 4. Creación de la gráfica con hover_data nativo
     color_map = {
         "Seguras (Nivel Óptimo)": "#00cc96", 
         "Vulnerables (Ahorro Preventivo)": "#FFA15A", 
@@ -856,28 +929,23 @@ if not error_mode:
 
     fig_matriz = px.scatter(
         df_matriz, x="nivel_hidrico_pct", y="pred_pct_Base",
-        color="Estatus", color_discrete_map=color_map,
-        hover_name="nombre_presa",
-        # Pasamos los datos para la ficha personalizada
-        custom_data=["nivel_hidrico_pct", "pred_pct_Base", "Estado_Nombre"],
+        color="Estatus", 
+        color_discrete_map=color_map,
+        hover_name="Encabezado", # Aparece en negrita arriba
+        # Configuramos qué mostrar en la tarjeta
+        hover_data={
+            "nivel_hidrico_pct": False,
+            "pred_pct_Base": False,
+            "Estatus": True,
+            "Predicción IA": True
+        },
         labels={
             "nivel_hidrico_pct": "Nivel Hoy (%)",
             "pred_pct_Base": "Nivel Proyectado por IA (%)"
         }
     )
     
-    # Humanización de la ficha de información (Tooltip)
-    _ = fig_matriz.update_traces(
-        hovertemplate=(
-            "<b>Presa: %{hovertext}</b> (%{customdata[2]})<br>" +
-            "<br>" +
-            "Situación actual: %{customdata[0]:.1f}% de agua<br>" +
-            "Predicción IA: %{customdata[1]:.1f}% de agua<br>" +
-            "Estatus: %{fullData.name}<br>" +
-            "<extra></extra>"
-        )
-    )
-    
+    # 5. Líneas de umbral y Layout
     _ = fig_matriz.add_vline(x=umbral_x, line_dash="dash", line_color="white", opacity=0.5)
     _ = fig_matriz.add_hline(y=umbral_y, line_dash="dash", line_color="white", opacity=0.5)
     
@@ -890,10 +958,8 @@ if not error_mode:
         legend=dict(
             title="",
             orientation="h",
-            yanchor="bottom",
-            y=1.05,                  
-            xanchor="center",
-            x=0.5,
+            yanchor="bottom", y=1.05,                  
+            xanchor="center", x=0.5,
             entrywidth=250,         
             entrywidthmode="pixels",
             itemwidth=40,
@@ -909,34 +975,39 @@ if not error_mode:
 ```{python}
 #| title: "El top de las presas con más problemas de llenado"
 if not error_mode:
-    # Filtramos valores mayores a 0.1 para evitar ruido de datos vacíos
+    # 1. Filtrado y preparación de datos
     df_validos = df_proyecciones[df_proyecciones['pred_pct_Base'] > 0.1].copy()
     
-    # Extraemos el estado para dar contexto geográfico
-    df_validos['Estado_Nombre'] = df_validos['estado_id'].str.split('-').str[-1]
+    # Extraemos el ID del estado (ej. ZAC)
+    df_validos['Estado'] = df_validos['estado_id'].str.split('-').str[-1]
     
-    # Ordenamos y tomamos las 10 con menor nivel
+    # Tomamos las 10 con menor nivel
     df_criticas = df_validos.sort_values(by="pred_pct_Base", ascending=True).head(10).copy()
     
+    # 2. Pre-formateo para la tarjeta (Sin HTML)
+    # Encabezado: "Nombre de Presa (ID)"
+    df_criticas['Encabezado'] = df_criticas['nombre_presa'] + " (" + df_criticas['Estado'] + ")"
+    
+    # Formateamos los valores y añadimos el estatus fijo
+    df_criticas['Reserva de agua'] = df_criticas['pred_pct_Base'].map('{:.1f}% de capacidad'.format)
+    df_criticas['Estatus'] = "Riesgo Crítico"
+
+    # 3. Creación de la gráfica con hover_data nativo
     fig_crit_bar = px.bar(
         df_criticas, x="pred_pct_Base", y="nombre_presa", orientation='h',
         color="pred_pct_Base", color_continuous_scale="Reds_r",
-        # Pasamos los datos para la ficha personalizada
-        custom_data=["pred_pct_Base", "Estado_Nombre"],
+        hover_name="Encabezado", # Se muestra en negrita automáticamente arriba
+        # Configuramos qué mostrar y qué ocultar
+        hover_data={
+            "pred_pct_Base": False,
+            "nombre_presa": False,
+            "Reserva de agua": True,
+            "Estatus": True
+        },
         labels={"pred_pct_Base": "Agua disponible (%)", "nombre_presa": "Presa"}
     )
     
-    # Humanización de la ficha de información (Tooltip)
-    _ = fig_crit_bar.update_traces(
-        hovertemplate=(
-            "<b>Presa: %{y}</b> (%{customdata[1]})<br>" +
-            "<br>" +
-            "Reserva de agua: %{customdata[0]:.1f}% de capacidad<br>" +
-            "Estatus: Riesgo Crítico<br>" +
-            "<extra></extra>"
-        )
-    )
-    
+    # 4. Ajustes de Layout (limpio de HTML)
     _ = fig_crit_bar.update_layout(
         **hover_style,
         yaxis={'categoryorder':'total descending'},
@@ -954,31 +1025,35 @@ if not error_mode:
 #| title: "Y en promedio, los estados de la república que se verían afectados"
 if not error_mode:
     df_estados = df_proyecciones.copy()
-    # Limpiamos el nombre del estado
+    # Limpiamos el nombre del estado (ID corto)
     df_estados['estado'] = df_estados['estado_id'].str.split('-').str[-1]
     
-    # Calculamos el promedio por estado y tomamos los 10 más bajos
+    # 1. Calculamos el promedio y preparamos el DataFrame de la gráfica
     df_agg = df_estados.groupby('estado')['pred_pct_Base'].mean().sort_values(ascending=True).head(10).reset_index()
 
+    # 2. Pre-formateo de etiquetas (Sin HTML)
+    df_agg['Disponibilidad'] = df_agg['pred_pct_Base'].map('{:.1f}%'.format)
+    df_agg['Estatus'] = "Alerta Crítica por Entidad"
+
+    # 3. Creación de la gráfica con hover_data nativo
     fig_est_bar = px.bar(
         df_agg, x="pred_pct_Base", y="estado", orientation='h',
         color="pred_pct_Base", color_continuous_scale="Reds_r",
-        # Pasamos los datos para la ficha personalizada
-        custom_data=["pred_pct_Base"],
-        labels={"pred_pct_Base": "Nivel Promedio (%)", "estado": "Estado"}
+        hover_name="estado", # El nombre del estado aparecerá arriba en negrita
+        # Configuramos qué mostrar y qué ocultar
+        hover_data={
+            "pred_pct_Base": False,
+            "estado": False,
+            "Disponibilidad": True,
+            "Estatus": True
+        },
+        labels={
+            "Disponibilidad": "Disponibilidad promedio regional",
+            "estado": "Estado"
+        }
     )
     
-    # Humanización de la ficha de información (Tooltip)
-    _ = fig_est_bar.update_traces(
-        hovertemplate=(
-            "<b>Estado: %{y}</b><br>" +
-            "<br>" +
-            "Disponibilidad promedio regional: %{customdata[0]:.1f}%<br>" +
-            "Estatus: Alerta Crítica por Entidad<br>" +
-            "<extra></extra>"
-        )
-    )
-    
+    # 4. Ajustes de Layout (limpio de HTML)
     _ = fig_est_bar.update_layout(
         **hover_style,
         yaxis={'categoryorder':'total descending'},
@@ -991,3 +1066,23 @@ if not error_mode:
     fig_est_bar.show()
 ```
 
+# 📖 Sobre los Datos
+
+## Row {height=100%}
+
+### Column {width=100%}
+
+*Fuente de la Información*
+Todos los registros en este proyecto provienen de fuentes públicas de Datos Abiertos del Gobierno de México. Extraídos a través de *CONAGUA* en su [Sistema Nacional de Información del Agua (SINA)](https://sinav30.conagua.gob.mx:8080/Presas/), y del [Servicio Meteorológico Nacional (SMN)](https://smn.conagua.gob.mx/es/climatologia/informacion-climatologica/informacion-estadistica-climatologica).
+
+*Cobertura y Periodo Analizado*
+El análisis comprende una extracción a nivel nacional con la radiografía de 210 presas y sus estaciones climáticas. El periodo de reporte histórico comprende desde el *1 enero de 1995 al 1 de abril de 2025*.
+
+*Limitaciones Reconocidas de la Solución*
+* *Proyecciones Simuladas:* Los datos presentados que involucran aumentos o variaciones de grados de temperatura bajo la Inteligencia Artificial (algoritmo de aprendizaje de máquina creado desde 0 por UPIIT Machine) representan simulaciones de inferencia proyectadas por nuestro modelo (el cual cuenta con un éxito validado de $R^2=0.9265$), acotado en alcance y como propuesta preventiva.
+
+* *Restricción de Presentación:* Dadas las características del modelo y de la interfaz para una mejor toma de decisión (teniendo en cuenta la rúbrica de la competencia), se omitió un sistema de predicción en vivo, sin embargo, se calcularon predicciones para realizar nuestro storytelling.
+
+* *Metodología de Extracción:* La captura de información se automatizó para obtener información de manera eficiente y estructurada en las fuentes de datos mencionadas; esquivando por completo la extracción superficial HTML. 
+
+* *Público dirigido:* El presente tablero está dirigido a tomadores de decisiones en CONAGUA y gobiernos estatales.
