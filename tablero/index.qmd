@@ -199,47 +199,24 @@ except Exception as e:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Salud del Agua en México"
+#| title: "Hasta Abril de 2025, ¿cuánta agua almacenan las presas de México en promedio?"
 dict(icon="droplet-half", color="primary", value=f"{nivel_actual:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Cambio en el Último Año"
+#| title: "Entonces, las variaciones climáticas ¿qué tanto afectaron entre 2024 y 2025?"
 color_var = "danger" if variacion_interanual < 0 else "success"
 dict(icon="graph-down-arrow", color=color_var, value=f"{variacion_interanual:+.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Presas en Nivel Crítico"
+#| title: "En México, existe un desabasto crítico ..."
 dict(icon="exclamation-triangle-fill", color="danger", value=f"{pct_critico:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Presas con Nivel Seguro"
+#| title: "Y existe un porcentaje de presas en nivel óptimo"
 dict(icon="check-circle-fill", color="success", value=f"{pct_optimo:.1f} %")
-```
-
-## Row {height=25%}
-```{python}
-#| content: valuebox
-#| title: "Diferencia vs Años Anteriores"
-color_desv = "warning" if desviacion_global < 0 else "info"
-dict(icon="moisture", color=color_desv, value=f"{desviacion_global:+.1f} %")
-```
-```{python}
-#| content: valuebox
-#| title: "Predicción IA para el Futuro"
-dict(icon="cpu-fill", color="secondary", value=f"{pred_promedio_ia:.1f} %")
-```
-```{python}
-#| content: valuebox
-#| title: "Impacto por Calentamiento (+2°C)"
-dict(icon="thermometer-sun", color="danger", value=f"{impacto_climatico_ia:+.1f} %")
-```
-```{python}
-#| content: valuebox
-#| title: "Agua Perdida por Aumento de Temperatura"
-dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_colapso_ia:.1f} %")
 ```
 
 ## Row {height=50%}
@@ -264,29 +241,51 @@ ax.axis("off")
 plt.tight_layout(pad=0)
 plt.show()
 ```
+## Row {height=25%}
+```{python}
+#| content: valuebox
+#| title: "Pero el estado actual es ¿mejor o peor que años anteriores?"
+color_desv = "warning" if desviacion_global < 0 else "info"
+dict(icon="moisture", color=color_desv, value=f"{desviacion_global:+.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "¿Qué nos espera en el futuro? Nuestro modelo predictivo indica que..."
+dict(icon="cpu-fill", color="secondary", value=f"{pred_promedio_ia:.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Y aún peor, el aumento de la temperatura (+2°C) podría agravar el desabasto"
+dict(icon="thermometer-sun", color="danger", value=f"{impacto_climatico_ia:+.1f} %")
+```
+```{python}
+#| content: valuebox
+#| title: "Y como consecuencia, el porcentaje de presas en nivel crítico podría aumentar"
+dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_colapso_ia:.1f} %")
+```
 
 # 📉 Tendencia Histórica
 
 ## Row {height=35%}
 ```{python}
 #| content: valuebox
-#| title: "Ritmo de Pérdida Anual"
+#| title: "A lo largo de los años 1995-2025, el nivel hídrico en las presas disminuye poco a poco"
 color_pend = "danger" if pendiente_tendencia < 0 else "success"
 dict(icon="graph-down" if pendiente_tendencia < 0 else "graph-up", color=color_pend, value=f"{pendiente_tendencia:+.2f} %/año")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Año con Mayor Escasez"
+#| title: "Y el año más crítico, es muy cercano a la actualidad"
 dict(icon="calendar-x", color="warning", value=f"{año_mas_critico}")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Inestabilidad del Clima"
+#| title: "La inestabilidad del llenado en las presas es muy volátil"
 dict(icon="moisture", color="info", value=f"±{volatilidad_sistema:.1f} %")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Balance de los Últimos 5 Años"
+#| title: "Además, en los últimos 5 años ha existido un estrés hídrico"
 color_5y = "danger" if cambio_5_años < 0 else "success"
 dict(icon="clock-history", color=color_5y, value=f"{cambio_5_años:+.1f} %")
 ```
@@ -295,7 +294,7 @@ dict(icon="clock-history", color=color_5y, value=f"{cambio_5_años:+.1f} %")
 
 ### Column {width=100%}
 ```{python}
-#| title: "Evolución Consolidada a Nivel País (Suavizada SMA 90-Días)"
+#| title: "¿Cómo ha cambiado el nivel de agua en las presas a lo largo de los años?"
 if not error_mode:
     # Calculamos la media móvil de 90 días para suavizar la tendencia
     df_actual['Tendencia_Suavizada'] = (
@@ -333,17 +332,17 @@ if not error_mode:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Estado con Mayor Escasez"
+#| title: "Es triste ver que el estado con menor nivel de agua es"
 dict(icon="geo-alt-fill", color="danger", value=f"{estado_menor_nivel}")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Mayor Deterioro por Entidad"
+#| title: "Y el estado con mayor deterioro es"
 dict(icon="bar-chart", color="warning", value=f"{estado_mayor_caida}")
 ```
 ```{python}
 #| content: valuebox
-#| title: "Zonas en Alerta de Desabasto"
+#| title: "Haciendo que las presas con menos del 40% de su capacidad sean"
 dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_critico_nacional:.1f} %")
 ```
 
@@ -351,7 +350,7 @@ dict(icon="sign-dead-end-fill", color="danger", value=f"{pct_critico_nacional:.1
 
 ### Column {width=100%}
 ```{python}
-#| title: "Evolución Histórica: ¿Cómo se ha vaciado México?"
+#| title: "Un viaje en el tiempo: ¿Cómo se ha vaciado México? (Interactúa con el botón de play)"
 if not error_mode:
     reducido = agrupado_geo[agrupado_geo['año_mes'].str.endswith("-01")]
     
@@ -436,7 +435,7 @@ if not error_mode:
 
 ### Column {width=100%}
 ```{python}
-#| title: "Análisis de Supervivencia: ¿Cuánta agua queda y cuánto tiempo durará?"
+#| title: "¿Qué pasará con el nivel de agua en las presas? Consulta el nivel actualizado."
 if not error_mode:
     # Unimos los datos
     df_merge = pd.merge(
@@ -490,12 +489,12 @@ if not error_mode:
     fig_criticas.show()
 ```
 
-# 🗺️ Escenarios Térmicos IA
+# 🗺️ Simulador Térmico
 
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Pérdida Máxima por Calor Extremo"
+#| title: "El modelo predictivo de UPIIT Machine proyecta que si en todo el país la temperatura sube 3°C, el nivel de agua en las presas disminuiría"
 if not error_mode:
     p_3c = 'pred_pct_Temp_+3C'
     if p_3c not in df_proyecciones.columns:
@@ -526,7 +525,7 @@ dict(
 
 ### Column {width=50%}
 ```{python}
-#| title: "Acelerador de Estrés: El impacto directo del calor (+2°C)"
+#| title: "Otro escenario no deseado (aumento de 2°C)"
 if not error_mode:
     df_impacto = df_proyecciones.copy()
     df_impacto['Pérdida_PCT'] = df_impacto['pred_pct_Base'] - df_impacto['pred_pct_Temp_+2C']
@@ -574,7 +573,7 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "Impacto Progresivo: Pérdida de Agua según el Aumento de Temperatura"
+#| title: "Y el impacto sería progresivo (interactúa con el deslizador)"
 if not error_mode:
     df_long = []
     p_3c = 'pred_pct_Temp_+3C'
@@ -669,7 +668,7 @@ if not error_mode:
 ## Row {height=25%}
 ```{python}
 #| content: valuebox
-#| title: "Riesgo de Desabasto a Futuro"
+#| title: "Pero aún con las condiciones actuales, nuestras predicciones dicen que presas en menos del 20% de llenado serían una realidad en el futuro"
 if not error_mode:
     criticas_futuro = (df_proyecciones['pred_pct_Base'] < 40).sum() / len(df_proyecciones) * 100
 else:
@@ -688,7 +687,7 @@ dict(
 
 ### Column {width=50%}
 ```{python}
-#| title: "Proyección Hídrica Nacional: Tendencia y Pronóstico IA"
+#| title: "Para el 2030, estaríamos en declive"
 if not error_mode:
     fig_linea = go.Figure()
     
@@ -758,7 +757,7 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "Impacto Crítico: Presas con Mayor Pérdida por Calor (+3°C)"
+#| title: "Finalmente, identificamos las presas con mayor riesgo de desabasto por el aumento de temperatura (+3°C)"
 if not error_mode:
     df_top = df_proyecciones.copy()
     p_3c = 'pred_pct_Temp_+3C'
@@ -821,7 +820,7 @@ if not error_mode:
 
 ### Column {width=100%}
 ```{python}
-#| title: "Matriz de Prioridad: Nivel Actual vs Pronóstico de Supervivencia"
+#| title: "¿Dónde actuar primero? No todo está pérdido si se toman acciones en las presas vulnerables (Urgentes)"
 if not error_mode:
     df_ultimos = ultimos[['presa_id', 'nivel_hidrico_pct']].copy()
     df_ultimos = df_ultimos.groupby('presa_id').mean().reset_index()
@@ -908,7 +907,7 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "Prioridades de Emergencia: Las 10 Presas con Menor Reserva de Agua"
+#| title: "El top de las presas con más problemas de llenado"
 if not error_mode:
     # Filtramos valores mayores a 0.1 para evitar ruido de datos vacíos
     df_validos = df_proyecciones[df_proyecciones['pred_pct_Base'] > 0.1].copy()
@@ -952,7 +951,7 @@ if not error_mode:
 
 ### Column {width=50%}
 ```{python}
-#| title: "Colapso Geográfico: Los 10 Estados con Menos Agua en sus Presas"
+#| title: "Y en promedio, los estados de la república que se verían afectados"
 if not error_mode:
     df_estados = df_proyecciones.copy()
     # Limpiamos el nombre del estado
