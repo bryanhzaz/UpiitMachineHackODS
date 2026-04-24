@@ -182,7 +182,7 @@ Archivo maestro de predicciones del modelo predictivo, listo para su representac
 
 ### Notas:
 1. El proyecto se limita a que las proyecciones por aumento de temperatura son simuladas; sin embargo, el modelo está listo para calcular estas predicciones. Por cuestiones de tiempo se acotó el alcance.
-2. Dado que la rúbrica de corte no menciona la existencia obligatoria de libretas de Jupyter, las visualizaciones se encuentran en el archivo `.qmd` alojado en `/tablero`. Además, por cuestiones de tiempo, no fue posible migrar los archivos en `/scripts` a libretas de Jupyter, sin embargo, son ejecutables y los resultados reproducibles en cualquier entorno de Python bajo las dependencias descritas en `pyproject.toml`.
+2. Dado que la rúbrica de corte no menciona la existencia obligatoria de libretas de Jupyter, las visualizaciones se encuentran en el archivo `.qmd` alojado en `/dashboard`. Además, por cuestiones de tiempo, no fue posible migrar los archivos en `/scripts` a libretas de Jupyter, sin embargo, son ejecutables y los resultados reproducibles en cualquier entorno de Python bajo las dependencias descritas en `pyproject.toml`.
 3. Nuestro primer archivo de Declaración de IA fue corrompido, intentamos reconstruirlo, por lo que consideramos que es carente de algunas secciones; sin embargo, el uso de modelos grandes de lenguaje está acotado al uso estratégico, un acelerador, mas no un sustituto.
 4. Hacemos énfasis en que el proceso de web scraping se hizo directamente a archivos estructurados que las instituciones proveen como DATOS ABIERTOS en distintos formatos y que no fue hecho para extraer contenido en páginas HTML o parecidos.
 
